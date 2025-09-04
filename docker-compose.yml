@@ -1,48 +1,13 @@
-
-
 services:
-# Servicio de productos
-  product-service:
-    build: 
-      context: ./product-service
-      dockerfile: dockerfile.dev
-    container_name: product_service_dev
-    restart: always
+  api-gateway:
+    build: .
     ports:
-      - "3001:3001"
-    environment:
-      DATABASE_HOST: product-db
-      DATABASE_PORT: 3306
-      DATABASE_USER: root
-      DATABASE_PASSWORD: APBjg7!RKa!P%t^NWd1y
-      DATABASE_NAME: products
-      API_URL: http://localhost:3001
-    volumes:
-      - ./product-service:/usr/src/app   
-      - /usr/src/app/node_modules        
+      - "3000:3000"
     depends_on:
-      - product-db
+      - product-service
+      - user-service
     networks:
       - app_network
-
-  #Base de datos productos (Mysql)
-  product-db:
-    image: mysql
-    container_name: mysql_product
-    restart: always
-    ports:
-    - "3307:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: APBjg7!RKa!P%t^NWd1y
-      MYSQL_DATABASE: products
-    volumes:
-      - product_data:/var/lib/mysql
-    networks:
-      - app_network
-
-volumes:
-  product_data:
-
 networks:
   app_network:
-    driver: bridge
+    external: true
