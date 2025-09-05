@@ -1,13 +1,13 @@
 services:
-# Servicio de productos
+  # Servicio de productos
   product-service:
-    build: 
+    build:
       context: .
       dockerfile: dockerfile.dev
     container_name: product_service_dev
     restart: always
     ports:
-      - "3001:3001"
+      - '3001:3001'
     environment:
       DATABASE_HOST: product-db
       DATABASE_PORT: 3306
@@ -16,8 +16,8 @@ services:
       DATABASE_NAME: products
       API_URL: http://localhost:3001
     volumes:
-      - ./src:/usr/src/app   
-      - /usr/src/app/node_modules        
+      - ./src:/usr/src/app/src
+      - /usr/src/app/node_modules
     depends_on:
       - product-db
     networks:
@@ -29,12 +29,12 @@ services:
     container_name: mysql_product
     restart: always
     ports:
-    - "3307:3306"
+      - '3307:3306'
     environment:
       MYSQL_ROOT_PASSWORD: APBjg7!RKa!P%t^NWd1y
       MYSQL_DATABASE: products
     volumes:
-      - product_data:/var/lib/mysql
+      - ./mysql_data:/var/lib/mysql
     networks:
       - app_network
 
@@ -43,4 +43,4 @@ volumes:
 
 networks:
   app_network:
-    driver: bridge
+    external: true

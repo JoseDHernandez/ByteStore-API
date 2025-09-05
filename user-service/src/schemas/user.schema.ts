@@ -5,7 +5,7 @@ export const registerSchema = z.object({
     .string()
     .trim()
     .min(6, "Debe tener al menos 6 caracteres")
-    .max(100, "No puede exceder 20 caracteres")
+    .max(200, "No puede exceder 200 caracteres")
     .regex(
       /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/,
       "Solo letras y espacios para el nombre"
@@ -61,7 +61,7 @@ export const updateSchema = z.object({
     .string()
     .trim()
     .min(6, "Debe tener al menos 6 caracteres")
-    .max(100, "No puede exceder 20 caracteres")
+    .max(200, "No puede exceder 200 caracteres")
     .regex(
       /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/,
       "Solo letras y espacios para el nombre"
@@ -72,15 +72,6 @@ export const updateSchema = z.object({
     .min(5, "El email debe tener al menos 5 caracteres")
     .max(300, "El email no puede exceder 300 caracteres")
     .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Email no válido"),
-  password: z
-    .string()
-    .trim()
-    .min(8, "La contraseña debe tener al menos 8 caracteres")
-    .max(20, "La contraseña no debe exceder los 20 caracteres")
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,20}$/,
-      "La contraseña debe incluir mayúscula, minúscula, número y carácter especial"
-    ),
   physical_address: z
     .string()
     .trim()
@@ -89,6 +80,19 @@ export const updateSchema = z.object({
     .regex(
       /^[A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s\.\,'"#°\-]+$/,
       "Caracteres inválidos en la dirección"
+    ),
+});
+//Actualizar contraseña
+export const updatePasswordSchema = z.object({
+  id: z.uuidv7().trim(),
+  password: z
+    .string()
+    .trim()
+    .min(8, "La contraseña debe tener al menos 8 caracteres")
+    .max(20, "La contraseña no debe exceder los 20 caracteres")
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,20}$/,
+      "La contraseña debe incluir mayúscula, minúscula, número y carácter especial"
     ),
 });
 //Eliminar
@@ -107,4 +111,22 @@ export const deleteSchema = z.object({
 //Eliminar por admnistrador
 export const uuidSchema = z.object({
   id: z.uuidv7().trim(),
+});
+//Actulizar rol
+export const changeRoleSchema = z.object({
+  id: z.uuidv7("Expected uuidv7").trim(),
+  role: z.enum(["administrador", "cliente"]),
+});
+//Buscar usuario
+
+export const searchUserSchema = z.object({
+  numberPage: z.coerce.number().int().positive().default(1),
+  perPage: z.coerce.number().int().positive().max(100).default(20),
+  search: z
+    .string()
+    .trim()
+    .min(6, "Debe tener al menos 6 caracteres")
+    .max(200, "No puede exceder 200 caracteres")
+    .regex(/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/, "Solo letras y espacios para el nombre")
+    .default(""),
 });

@@ -14,7 +14,9 @@ export const login = async (req: Request, res: Response) => {
     //Validar
     const dataBody = loginSchema.safeParse({ email, password });
     if (!dataBody.success)
-      return res.status(400).json({ message: "Invalid data" });
+      return res
+        .status(400)
+        .json({ message: "Invalid data", errors: dataBody.error.format });
     const data = dataBody.data;
     //Obtener usuario
     const [userData] = await db.query<User[]>(
@@ -66,7 +68,9 @@ export const register = async (req: Request, res: Response) => {
     });
     //Retornar error de validación
     if (!dataBody.success)
-      return res.status(400).json({ message: "Invalid data" });
+      return res
+        .status(400)
+        .json({ message: "Invalid data", errors: dataBody.error.format });
     const data = dataBody.data;
     //Consultar existencia
     const [SearchUser] = await db.query<CountUsers[]>(

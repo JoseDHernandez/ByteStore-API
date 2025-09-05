@@ -20,9 +20,8 @@ export async function authMiddleware(
   if (!authHeader) {
     return res.status(401).json({ message: "Token requerido" });
   }
-
-  const token = authHeader.split(" ")[1];
-  const decoded: JWTData | null = verifyToken(token ?? "");
+  //Decodificar token
+  const decoded: JWTData | null = verifyToken(authHeader ?? "");
 
   if (!decoded) {
     return res.status(401).json({ message: "Invalid or expired token" });
@@ -58,7 +57,7 @@ export async function isAdmin(req: Request, res: Response, next: NextFunction) {
   //Validar con base de datos
   try {
     const [getUser] = await db.query<UserRole[]>(
-      "SELECT UPPER(roles.name) as role FROM users INNER JOIN roles ON users.role=roles.id WHERE id = ?",
+      "SELECT UPPER(roles.name) as role FROM users INNER JOIN roles ON users.role=roles.id WHERE users.id = ?",
       [req.auth.id]
     );
     if (getUser[0]?.role !== "ADMINISTRADOR")

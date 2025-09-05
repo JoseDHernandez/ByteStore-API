@@ -2,13 +2,15 @@ import type { Request, Response } from "express";
 import { db } from "../db.ts";
 import bcrypt from "bcrypt";
 import {
+  changeRoleSchema,
   deleteSchema,
+  searchUserSchema,
+  updatePasswordSchema,
   updateSchema,
   uuidSchema,
 } from "../schemas/user.schema.ts";
 import type { ResultSetHeader } from "mysql2";
 import type { RowDataPacket } from "mysql2";
-import type { UserResponseDTO } from "./dto/userResponse.dto.ts";
 import type { User } from "../types/user.ts";
 //Obtener usuarios
 export const getUsers = async (req: Request, res: Response) => {
@@ -27,11 +29,14 @@ export const getUsers = async (req: Request, res: Response) => {
 //obtener usuarios paginación
 export const getUsersPaginated = async (req: Request, res: Response) => {
   try {
-    //Parametros
-    const numberPage = parseInt(req.query.page as string) || 1;
-    const perPage = parseInt(req.query.per_page as string) || 10;
-    const search = (req.query.search as string) || "";
+    const validation = searchUserSchema.safeParse(req.query);
+    if (!validation.success)
+      return res.status(400).json({
+        message: "Invalid data",
+        errors: validation.error.format,
+      });
 
+    const { numberPage, perPage, search } = validation.data;
     //Buscar nombre
     let condition = "";
     let params: any[] = [];
@@ -81,24 +86,27 @@ export const getUsersPaginated = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
   try {
     //Obtener datos
-    const { id, name, email, password, physical_address } = req.body;
+    const { id } = req.params;
+    const { name, email, physical_address } = req.body;
     const dataBody = updateSchema.safeParse({
       id,
       name,
       email,
-      password,
       physical_address,
     });
     //Validar
     if (!dataBody.success)
-      return res.status(400).json({ message: "Invalid data" });
+      return res.status(400).json({
+        message: "Invalid data",
+        errors: dataBody.error.format,
+      });
     //Validar cuenta
     const data = dataBody.data;
-    if (data.id !== req.auth?.id)
-      return res.status(401).json({ message: "Invalid Id" });
+    if (data.id !== req.auth?.id && req.auth?.role !== "ADMINISTRADOR")
+      return res.status(401).json({ message: "Invalid role" });
     const [updateSQL] = await db.query<ResultSetHeader>(
-      "UPDATE users SET name=?, email=?, password=?,physical_address=? WHERE id=?",
-      [data.name, data.email, data.password, data.physical_address, data.id]
+      "UPDATE users SET name=?, email=?,physical_address=? WHERE id=?",
+      [data.name, data.email, data.physical_address, data.id]
     );
     if (updateSQL.affectedRows === 1)
       return res.status(200).json({ message: "Account updated" });
@@ -107,6 +115,76 @@ export const updateUser = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Server error", error });
   }
 };
+//Actualizar constraseña
+export const updatePassword = async (req: Request, res: Response) => {
+  try {
+    //Obtener datos
+    const { id } = req.params;
+    const { password } = req.body;
+    const validation = updatePasswordSchema.safeParse({ id, password });
+    if (!validation.success)
+      return res.status(400).json({
+        message: "Invalid data",
+        errors: validation.error.format,
+      });
+    const data = validation.data;
+    //diferente usuario y no es administrador
+    if (data.id !== req.auth?.id && req.auth?.role !== "ADMINISTRADOR")
+      return res.status(401).json({ message: "Invalid role" });
+    const passwordHashed = await bcrypt.hash(data.password, 13);
+    const [updateSQL] = await db.query<ResultSetHeader>(
+      "UPDATE users SET password=? WHERE id=?",
+      [passwordHashed, data.id]
+    );
+    if (updateSQL.affectedRows === 1)
+      return res.status(200).json({ message: "Password updated" });
+    return res.status(304).json({ message: "Password not updated" });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error", error });
+  }
+};
+//Actualizar rol
+type UserRole = RowDataPacket & {
+  role: string;
+};
+export const changeRole = async (req: Request, res: Response) => {
+  try {
+    //Obtener datos y validar
+    const { id } = req.params;
+    const { role } = req.body ?? "";
+    const validation = changeRoleSchema.safeParse({ id, role });
+    if (!validation.success)
+      return res.status(400).json({
+        message: "Invalid data",
+        errors: validation.error.format,
+      });
+    const userId = validation.data.id;
+    //Convertir rol
+    const rol =
+      validation.data.role.charAt(0).toUpperCase() +
+      validation.data.role.slice(1);
+    //obtener rol
+    const [getRole] = await db.query<UserRole[]>(
+      "SELECT id as role FROM roles WHERE name=? ",
+      [rol]
+    );
+    if (!getRole[0]?.role)
+      return res.status(404).json({ message: "Invalid role" });
+    //actualizar
+    const [updateRole] = await db.query<ResultSetHeader>(
+      "UPDATE users SET role=? WHERE id=?",
+      [getRole[0].role, userId]
+    );
+    if (updateRole.affectedRows === 1)
+      return res
+        .status(200)
+        .json({ message: `Role hanged to: ${rol} for ${id}` });
+    return res.status(304).json({ message: "Role not changed" });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error", error });
+  }
+};
+
 //Eliminar cuenta
 type UserPassword = RowDataPacket & {
   password: string;
@@ -114,49 +192,66 @@ type UserPassword = RowDataPacket & {
 export const deleteUser = async (req: Request, res: Response) => {
   try {
     //obtener datos y validar
-    const { id, password } = req.body;
-    const validation = deleteSchema.safeParse({ id, password });
-    if (!validation.success)
-      return res.status(400).json({ message: "Invalid data" });
-    const data = validation.data;
-    if (data.id !== req.auth?.id)
-      return res.status(401).json({ message: "Invalid Id" });
-    //Obtener usuario
-    const [userQuery] = await db.query<UserPassword[]>(
-      "SELECT password FROM  WHERE id=?",
-      [data.id]
-    );
-    //validar existencia del usuario
-    if (userQuery[0] && userQuery.length === 1) {
-      const compareHash = bcrypt.compare(data.password, userQuery[0].password);
-      if (!compareHash)
-        return res.status(401).json({ message: "Invalid password" });
-      //Eliminar cuenta
-      const [deleteSQL] = await db.query<ResultSetHeader>(
-        "DELETE FROM users WHERE id=?",
+    const { id } = req.params;
+    //Variable id
+    let userId: string = "";
+    //Validar segun el rol
+    if (req.auth?.role === "ADMINISTRADOR") {
+      const v = uuidSchema.safeParse({ id });
+      if (!v.success)
+        return res.status(400).json({
+          message: "Invalid data",
+          errors: v.error.format,
+        });
+      //Validar
+      const [userQuery] = await db.query<UserPassword[]>(
+        "SELECT role FROM users WHERE id=?",
+        [v.data.id]
+      );
+      if (!userQuery[0])
+        return res.status(404).json({ message: "not found account by Id" });
+      userId = v.data.id;
+    } else {
+      const { password } = req.body;
+      const validation = deleteSchema.safeParse({ id, password });
+      if (!validation.success)
+        return res.status(400).json({
+          message: "Invalid data",
+          errors: validation.error.format,
+        });
+      const data = validation.data;
+      if (data.id !== req.auth?.id)
+        return res.status(401).json({ message: "Invalid Id" });
+      //Obtener usuario
+      const [userQuery] = await db.query<UserPassword[]>(
+        "SELECT password FROM users WHERE id=?",
         [data.id]
       );
-      if (deleteSQL.affectedRows === 1)
-        return res.status(200).json({ message: "Account deleted" });
-      return res.status(304).json({ message: "Account not deleted" });
+      //validar existencia del usuario
+      if (userQuery[0] && userQuery.length === 1) {
+        const compareHash = await bcrypt.compare(
+          data.password,
+          userQuery[0].password
+        );
+        if (!compareHash)
+          return res.status(401).json({ message: "Invalid password" });
+        userId = data.id;
+      }
+      return res.status(404).json({ message: "not found account by Id" });
     }
+    if (!userId) {
+      return res.status(400).json({ message: "Invalid Id" });
+    }
+    //Eliminar cuenta
+    const [deleteSQL] = await db.query<ResultSetHeader>(
+      "DELETE FROM users WHERE id=?",
+      [userId]
+    );
+    //Retornar estado
+    if (deleteSQL.affectedRows === 1)
+      return res.status(200).json({ message: "Account deleted" });
+    return res.status(304).json({ message: "Account not deleted" });
   } catch (error) {
     return res.status(500).json({ message: "Server error", error });
   }
-};
-//Eliminar cuenta por administrador
-export const deleteUserByAdmin = async (req: Request, res: Response) => {
-  //obtener datos y validar
-  const { id } = req.body;
-  const v = uuidSchema.safeParse({ id });
-  if (!v.success) return res.status(400).json({ message: "Invalid data" });
-  const data = v.data;
-  //eliminar
-  const [deleteSQL] = await db.query<ResultSetHeader>(
-    "DELETE FROM users WHERE id=?",
-    [data.id]
-  );
-  if (deleteSQL.affectedRows === 1)
-    return res.status(200).json({ message: "Account deleted" });
-  return res.status(304).json({ message: "Account not deleted" });
 };

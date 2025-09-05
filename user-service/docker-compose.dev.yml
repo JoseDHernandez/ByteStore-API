@@ -31,7 +31,7 @@ services:
       MYSQL_ROOT_PASSWORD: Dp%mdSM^7MDr3qSQ6Cas
       MYSQL_DATABASE: users
     volumes:
-      - user_data:/var/lib/mysql
+      - ./mysql_data:/var/lib/mysql
     networks:
       - app_network
 
@@ -40,4 +40,4 @@ volumes:
 
 networks:
   app_network:
-    driver: bridge
+    external: true

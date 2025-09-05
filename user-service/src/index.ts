@@ -13,7 +13,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 // Rutas
-app.use("/users", userRoutes);
+app.use(userRoutes);
 app.use(accountRoutes);
 app.listen(PORT, () => {
   console.log(`User service running on port ${PORT}`);

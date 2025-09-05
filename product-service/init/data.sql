@@ -1,9 +1,4 @@
 alter database products character set utf8mb4 collate utf8mb4_spanish2_ci;
-drop table products;
-drop table brands;
-drop table displays;
-drop table operating_systems;
-drop table processors;
 create table `displays`(
 	`id` int not null auto_increment,
     `size` decimal(4,1) not null,
@@ -38,23 +33,25 @@ create table `products`(
     `processor_id` int not null,
     `system_id` int not null,
     `display_id` int not null,
-    `name` varchar(200) not null index,
+    `name` varchar(200) not null,
     `description` varchar(1000) not null,
     `price` decimal(10,2) not null,
     `discount` int null,
     `stock` int not null,
     `image` varchar(2000) not null,
     `brand_id` int not null,
-    `model` varchar(200) not null index,
+    `model` varchar(200) not null,
     `ram_capacity` int not null,
     `disk_capacity` int not null,
-    `qualificacition` decimal(1,1) default 0.0,
+    `qualification` decimal(1,1) default 0.0,
     primary key (id),
     constraint FK_processor_id foreign key (`processor_id`) references processors(`id`) on delete cascade on update cascade,
     constraint FK_system_id foreign key (`system_id`) references operating_systems(`id`) on delete cascade on update cascade,
     constraint FK_display_id foreign key (`display_id`) references displays(`id`) on delete cascade on update cascade,
     constraint FK_brand_id foreign key (`brand_id`) references brands (`id`) on delete cascade on update cascade
 );
+create index index_product_name on products (name);
+create index index_product_model on products (model);
 -- INSERTS FOR operating_systems
 INSERT INTO operating_systems ( `system`, distribution) VALUES ( 'Windows', 'Windows 11 Home');
 INSERT INTO operating_systems ( `system`, distribution) VALUES ( 'Windows', 'Windows 11');

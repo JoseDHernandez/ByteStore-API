@@ -14,8 +14,8 @@ import { CreateProductDTO } from './dto/create-product.dto';
 import { ProductsService } from './products.service';
 import { ResponseProductDTO } from './dto/response-product.dto';
 import { ResponseProductPaginatedDTO } from './dto/response-product-pag.dto';
-//Ruta: /products
-@Controller('products')
+//Ruta: /
+@Controller()
 export class ProductsController {
   constructor(private producstService: ProductsService) {}
   //Crear producto
