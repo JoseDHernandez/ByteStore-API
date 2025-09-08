@@ -8,5 +8,6 @@ import { ProcessorsService } from './processors.service';
   imports: [TypeOrmModule.forFeature([Processor])],
   controllers: [ProcessorsController],
   providers: [ProcessorsService],
+  exports: [ProcessorsService],
 })
 export class ProcessorsModule {}

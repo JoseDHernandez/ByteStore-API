@@ -17,7 +17,7 @@ create table `processors`(
 	`id` int not null auto_increment,
     `brand` varchar(200) not null,
     `family` varchar(500) not null,
-    `model` varchar(200) not null,
+    `model` varchar(200) not null unique,
     `cores` int not null,
     `speed` varchar(1000) not null,
     primary key(`id`)
@@ -33,14 +33,14 @@ create table `products`(
     `processor_id` int not null,
     `system_id` int not null,
     `display_id` int not null,
-    `name` varchar(200) not null,
+    `name` varchar(200) not null unique,
     `description` varchar(1000) not null,
     `price` decimal(10,2) not null,
     `discount` int null,
     `stock` int not null,
     `image` varchar(2000) not null,
     `brand_id` int not null,
-    `model` varchar(200) not null,
+    `model` varchar(200) not null unique,
     `ram_capacity` int not null,
     `disk_capacity` int not null,
     `qualification` decimal(1,1) default 0.0,
@@ -107,11 +107,11 @@ INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 18, 'WQXGA', 
 
 -- INSERTS FOR brands
 INSERT INTO brands (id, name) VALUES (1, 'HP');
-INSERT INTO brands (id, name) VALUES (2, 'Lenovo');
+INSERT INTO brands (id, name) VALUES (2, 'LENOVO');
 INSERT INTO brands (id, name) VALUES (3, 'ASUS');
-INSERT INTO brands (id, name) VALUES (4, 'Acer');
+INSERT INTO brands (id, name) VALUES (4, 'ACER');
 INSERT INTO brands (id, name) VALUES (5, 'MSI');
-INSERT INTO brands (id, name) VALUES (6, 'MacBook');
+INSERT INTO brands (id, name) VALUES (6, 'MACBOK');
 INSERT INTO brands (id, name) VALUES (7, 'ROG');
 
 -- INSERTS FOR products

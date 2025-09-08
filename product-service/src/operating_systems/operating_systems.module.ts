@@ -8,5 +8,6 @@ import { OperatingSystemsService } from './operating_systems.service';
   imports: [TypeOrmModule.forFeature([Operating_system])],
   controllers: [OperatingSystemsController],
   providers: [OperatingSystemsService],
+  exports: [OperatingSystemsService],
 })
 export class OperatingSystemsModule {}

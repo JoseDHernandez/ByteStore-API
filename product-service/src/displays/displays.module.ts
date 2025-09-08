@@ -8,5 +8,6 @@ import { Display } from './display.enity';
   imports: [TypeOrmModule.forFeature([Display])],
   controllers: [DisplaysController],
   providers: [DisplaysService],
+  exports: [DisplaysService],
 })
 export class DisplaysModule {}

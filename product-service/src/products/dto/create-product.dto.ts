@@ -1,15 +1,29 @@
-export class CreateProductDTO{
-      name:string;
-    description:string;
-    price:number;
-    discount:number|undefined;
-    stock:number;
-    image:string;
-    model:string;
-    ram_capacity:number;
-    disk_capacity:number;
-    processor_id:number;
-    system_id:number;
-    screen_id:number;
-    brand_id:number;
+export class CreateProductDTO {
+  name: string;
+  description: string;
+  price: number;
+  discount: number;
+  stock: number;
+  image: string;
+  model: string;
+  ram_capacity: number;
+  disk_capacity: number;
+  processor: {
+    brand: string;
+    familiy: string;
+    model: string;
+    cores: number;
+    speed: string;
+  };
+  system: {
+    system: string;
+    distribution: string;
+  };
+  display: {
+    size: number;
+    resolution: string;
+    graphics: string;
+    brand: string | undefined;
+  };
+  brand: string;
 }

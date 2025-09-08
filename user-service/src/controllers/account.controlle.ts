@@ -85,9 +85,27 @@ export const register = async (req: Request, res: Response) => {
       "INSERT INTO users (id, name, email, password, physical_address) VALUES (?,?,?,?,?)",
       [uuid(), data.name, data.email, passwordHashed, data.physical_address]
     );
-    if (registerUser.affectedRows == 1)
-      return res.status(201).json({ message: "The user was registered" });
-    return res.status(400).json({ message: "Error to register a new user" });
+    if (registerUser.affectedRows == 1) {
+      //obtener id y rol
+      const [userData] = await db.query<User[]>(
+        "SELECT users.id as id,  UPPER(roles.name) as role  FROM users INNER JOIN roles ON users.role = roles.id WHERE email=?",
+        [data.email]
+      );
+      if (!userData[0])
+        return res.status(400).json({ message: "User not found" });
+      //retornar usuario creado
+      const Dto: UserResponseDTO = {
+        ...data,
+        id: userData[0].id,
+        role: userData[0].role,
+      };
+      return res
+        .status(201)
+        .json({ message: "The user was registered", data: Dto });
+    }
+    return res
+      .status(400)
+      .json({ message: "Error to register a new user", data });
   } catch (error) {
     return res.status(500).json({ message: "Server error", error });
   }

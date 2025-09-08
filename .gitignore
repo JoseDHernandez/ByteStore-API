@@ -1,6 +1,6 @@
 # Ignorar dependencias
 node_modules/
-
+.vscode/
 # Ignorar archivos de compilación
 dist/
 build/

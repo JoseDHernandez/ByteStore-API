@@ -35,7 +35,7 @@ export class Product {
   @Column({ type: 'decimal', default: () => 0.0 })
   qualification: number;
 
-  @ManyToOne(() => Brand, (brand) => brand.name)
+  @ManyToOne(() => Brand)
   @JoinColumn({ name: 'brand_id' })
   brand: Brand;
 

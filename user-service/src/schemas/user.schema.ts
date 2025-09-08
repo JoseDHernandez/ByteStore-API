@@ -108,11 +108,11 @@ export const deleteSchema = z.object({
       "La contraseña debe incluir mayúscula, minúscula, número y carácter especial"
     ),
 });
-//Eliminar por admnistrador
+//Eliminar por administrador
 export const uuidSchema = z.object({
   id: z.uuidv7().trim(),
 });
-//Actulizar rol
+//Actualizar rol
 export const changeRoleSchema = z.object({
   id: z.uuidv7("Expected uuidv7").trim(),
   role: z.enum(["administrador", "cliente"]),
@@ -120,8 +120,8 @@ export const changeRoleSchema = z.object({
 //Buscar usuario
 
 export const searchUserSchema = z.object({
-  numberPage: z.coerce.number().int().positive().default(1),
-  perPage: z.coerce.number().int().positive().max(100).default(20),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(20),
   search: z
     .string()
     .trim()

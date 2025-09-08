@@ -12,6 +12,7 @@ import {
 import type { ResultSetHeader } from "mysql2";
 import type { RowDataPacket } from "mysql2";
 import type { User } from "../types/user.ts";
+import type { UserResponseDTO } from "./dto/userResponse.dto.ts";
 //Obtener usuarios
 export const getUsers = async (req: Request, res: Response) => {
   try {
@@ -36,7 +37,7 @@ export const getUsersPaginated = async (req: Request, res: Response) => {
         errors: validation.error.format,
       });
 
-    const { numberPage, perPage, search } = validation.data;
+    const { page: numberPage, limit: perPage, search } = validation.data;
     //Buscar nombre
     let condition = "";
     let params: any[] = [];
@@ -108,14 +109,19 @@ export const updateUser = async (req: Request, res: Response) => {
       "UPDATE users SET name=?, email=?,physical_address=? WHERE id=?",
       [data.name, data.email, data.physical_address, data.id]
     );
-    if (updateSQL.affectedRows === 1)
-      return res.status(200).json({ message: "Account updated" });
+    if (updateSQL.affectedRows === 1) {
+      const dto: UserResponseDTO = {
+        ...data,
+        role: req.auth?.role === "ADMINISTRADOR" ? "ADMINISTRADOR" : "CLIENTE",
+      };
+      return res.status(200).json({ message: "Account updated", data: dto });
+    }
     return res.status(304).json({ message: "Account not updated" });
   } catch (error) {
     return res.status(500).json({ message: "Server error", error });
   }
 };
-//Actualizar constraseña
+//Actualizar contraseña
 export const updatePassword = async (req: Request, res: Response) => {
   try {
     //Obtener datos
@@ -175,10 +181,24 @@ export const changeRole = async (req: Request, res: Response) => {
       "UPDATE users SET role=? WHERE id=?",
       [getRole[0].role, userId]
     );
-    if (updateRole.affectedRows === 1)
+    if (updateRole.affectedRows === 1) {
+      const [userQuery] = await db.query<User[]>(
+        "SELECT name,email,physical_address FROM users WHERE id=?",
+        [userId]
+      );
+      if (!userQuery[0])
+        return res.status(404).json({ message: "User not found" });
+      const data: UserResponseDTO = {
+        id: userId,
+        name: userQuery[0].name,
+        email: userQuery[0].email,
+        physical_address: userQuery[0].physical_address,
+        role: rol.toUpperCase(),
+      };
       return res
         .status(200)
-        .json({ message: `Role hanged to: ${rol} for ${id}` });
+        .json({ message: `Role changed to: ${rol} for ${id}`, data });
+    }
     return res.status(304).json({ message: "Role not changed" });
   } catch (error) {
     return res.status(500).json({ message: "Server error", error });
@@ -195,7 +215,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     const { id } = req.params;
     //Variable id
     let userId: string = "";
-    //Validar segun el rol
+    //Validar según el rol
     if (req.auth?.role === "ADMINISTRADOR") {
       const v = uuidSchema.safeParse({ id });
       if (!v.success)
