@@ -57,17 +57,9 @@ export class ProductsService {
     const brand = await this.brandsService.createBrand({
       name: product.brand,
     });
-    //crar producto
+    //crear producto
     const newProduct = this.productRepository.create({
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      discount: product.discount,
-      stock: product.stock,
-      image: product.image,
-      model: product.model,
-      ram_capacity: product.ram_capacity,
-      disk_capacity: product.disk_capacity,
+      ...product,
       qualification: 0.0,
       processor,
       system,
@@ -86,16 +78,14 @@ export class ProductsService {
     return res.map((r) => this.parseProductToDTO(r));
   }
   //Obtener producto por Id
-  async getProductById(
-    id: number,
-  ): Promise<ResponseProductDTO | NotFoundException> {
+  async getProductById(id: number): Promise<ResponseProductDTO> {
     const res = await this.productRepository.findOne({
       relations: ['brand', 'processor', 'system', 'display'],
       where: { id },
     });
 
     if (!res) {
-      return new NotFoundException(
+      throw new NotFoundException(
         `El producto con el id ${id} no fue encontrado`,
       );
     }

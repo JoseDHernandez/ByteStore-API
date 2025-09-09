@@ -6,7 +6,6 @@ import {
   Param,
   Query,
   ParseIntPipe,
-  HttpCode,
   NotFoundException,
   DefaultValuePipe,
 } from '@nestjs/common';
@@ -17,11 +16,11 @@ import { ResponseProductPaginatedDTO } from './dto/response-product-pag.dto';
 //Ruta: /
 @Controller()
 export class ProductsController {
-  constructor(private producstService: ProductsService) {}
+  constructor(private productsService: ProductsService) {}
   //Crear producto
   @Post()
   createProduct(@Body() newProduct: CreateProductDTO) {
-    return this.producstService.createProduct(newProduct);
+    return this.productsService.createProduct(newProduct);
   }
   //Obtener productos
   @Get()
@@ -43,7 +42,7 @@ export class ProductsController {
       const sortReview =
         order_review === 'ASC' || order_review === 'DESC' ? order_review : null;
 
-      return this.producstService.getProductsPaginated(
+      return this.productsService.getProductsPaginated(
         pageNum,
         perPageNum,
         queryTerms,
@@ -51,14 +50,14 @@ export class ProductsController {
         sortReview,
       );
     }
-    return this.producstService.getProducts();
+    return this.productsService.getProducts();
   }
 
   //Obtener productor por Id
   @Get(':id')
   getProduct(
     @Param('id', ParseIntPipe) id: number,
-  ): Promise<ResponseProductDTO | NotFoundException> {
-    return this.producstService.getProductById(id);
+  ): Promise<ResponseProductDTO> {
+    return this.productsService.getProductById(id);
   }
 }
