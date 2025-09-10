@@ -3,6 +3,8 @@ import {
   Controller,
   Post,
   Get,
+  Put,
+  Delete,
   Param,
   Query,
   ParseIntPipe,
@@ -11,16 +13,34 @@ import {
 } from '@nestjs/common';
 import { CreateProductDTO } from './dto/create-product.dto';
 import { ProductsService } from './products.service';
-import { ResponseProductDTO } from './dto/response-product.dto';
-import { ResponseProductPaginatedDTO } from './dto/response-product-pag.dto';
+import {
+  ResponseProductDTO,
+  ResponseProductFiltersDTO,
+  ResponseProductPaginatedDTO,
+} from './dto/response-product.dto';
+import { UpdateProductDTO } from './dto/update-product.dto';
 //Ruta: /
 @Controller()
 export class ProductsController {
   constructor(private productsService: ProductsService) {}
-  //Crear producto
+  //======= Crear producto =======
   @Post()
   createProduct(@Body() newProduct: CreateProductDTO) {
     return this.productsService.createProduct(newProduct);
+  }
+
+  //Actualizar
+  @Put(':id')
+  updateProduct(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() product: UpdateProductDTO,
+  ): Promise<ResponseProductDTO> {
+    return this.productsService.updateProduct(id, product);
+  }
+  //eliminar
+  @Delete(':id')
+  deleteProduct(@Param('id', ParseIntPipe) id: number) {
+    return this.productsService.deleteProduct(id);
   }
   //Obtener productos
   @Get()
@@ -52,7 +72,11 @@ export class ProductsController {
     }
     return this.productsService.getProducts();
   }
-
+  //obtener filtros
+  @Get('filters')
+  getFilters(): Promise<ResponseProductFiltersDTO> {
+    return this.productsService.getFilters();
+  }
   //Obtener productor por Id
   @Get(':id')
   getProduct(

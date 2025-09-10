@@ -1,9 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brand } from './brand.entity';
-import { DeleteResult, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CreateBrandDTO } from './dto/create-brand.dto';
-import { ResponseBrandDTO } from './dto/response-brand.dto';
+import {
+  ResponseBrandDTO,
+  ResponseBrandsNameDTO,
+} from './dto/response-brand.dto';
 import { UpdateBrandDTO } from './dto/update-brand.dto';
 
 @Injectable()
@@ -27,11 +30,19 @@ export class BrandsService {
     const brands = await this.brandsRepository.find();
     return brands;
   }
+  //obtener por id
+  getBrandById(id: number): Promise<ResponseBrandDTO | null> {
+    return this.brandsRepository.findOneBy({ id });
+  }
+  //obtener solo el nombre de las marcas
+  getBrandsName(): Promise<ResponseBrandsNameDTO[]> {
+    return this.brandsRepository.find({ select: { name: true } });
+  }
   //actualizar marca
   async updateBrand(
     id: number,
     brand: UpdateBrandDTO,
-  ): Promise<ResponseBrandDTO | NotFoundException> {
+  ): Promise<ResponseBrandDTO> {
     const updateBrand = await this.brandsRepository.update(
       { id },
       { ...brand },
@@ -40,7 +51,14 @@ export class BrandsService {
     throw new NotFoundException(`La marca con el id ${id} no fue actualizada.`);
   }
   //eliminar marca
-  async deleteBrand(id: number): Promise<DeleteResult> {
-    return await this.brandsRepository.delete({ id });
+  async deleteBrand(id: number) {
+    const res = await this.brandsRepository.delete({ id });
+    if (res.affected === 1)
+      return {
+        message: `Se elimino correctamente el registro de la marca con id: ${id}`,
+      };
+    throw new NotFoundException(
+      `No se encontró un registro de la marca con el id: ${id}`,
+    );
   }
 }

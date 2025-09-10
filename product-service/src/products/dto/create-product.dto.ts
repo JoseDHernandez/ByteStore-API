@@ -10,7 +10,7 @@ export class CreateProductDTO {
   disk_capacity: number;
   processor: {
     brand: string;
-    familiy: string;
+    family: string;
     model: string;
     cores: number;
     speed: string;

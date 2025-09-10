@@ -1,6 +1,6 @@
 export class CreateProcessorDTO {
   brand: string;
-  familiy: string;
+  family: string;
   model: string;
   cores: number;
   speed: string;

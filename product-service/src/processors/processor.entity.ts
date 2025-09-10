@@ -13,5 +13,5 @@ export class Processor {
   @Column()
   cores: number;
   @Column()
-  speed: number;
+  speed: string;
 }

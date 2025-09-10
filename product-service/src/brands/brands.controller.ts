@@ -4,7 +4,6 @@ import {
   Patch,
   Param,
   Body,
-  NotFoundException,
   Delete,
 } from '@nestjs/common';
 import { BrandsService } from './brands.service';
@@ -25,12 +24,12 @@ export class BrandsController {
   updateBrand(
     @Param('id', ParseIntPipe) id: number,
     @Body() brand: UpdateBrandDTO,
-  ): Promise<ResponseBrandDTO | NotFoundException> {
+  ): Promise<ResponseBrandDTO> {
     return this.brandsService.updateBrand(id, brand);
   }
   //eliminar
   @Delete(':id')
-  deleteBrand(@Param('id', ParseIntPipe) id: number): Promise<DeleteResult> {
+  deleteBrand(@Param('id', ParseIntPipe) id: number) {
     return this.brandsService.deleteBrand(id);
   }
 }

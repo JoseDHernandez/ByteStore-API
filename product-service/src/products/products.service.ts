@@ -3,12 +3,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './product.entity';
 import { Repository } from 'typeorm';
 import { CreateProductDTO } from './dto/create-product.dto';
-import { ResponseProductDTO } from './dto/response-product.dto';
-import { ResponseProductPaginatedDTO } from './dto/response-product-pag.dto';
+import {
+  ResponseProductDTO,
+  ResponseProductFiltersDTO,
+  ResponseProductPaginatedDTO,
+} from './dto/response-product.dto';
 import { ProcessorsService } from 'src/processors/processors.service';
 import { OperatingSystemsService } from 'src/operating_systems/operating_systems.service';
 import { DisplaysService } from 'src/displays/displays.service';
 import { BrandsService } from 'src/brands/brands.service';
+import { UpdateProductDTO } from './dto/update-product.dto';
 @Injectable()
 export class ProductsService {
   //Usar clase/entidad Product en privado
@@ -152,6 +156,66 @@ export class ProductsService {
       next,
       prev,
       data: res.map((e) => this.parseProductToDTO(e)),
+    };
+  }
+  //actualizar
+  async updateProduct(
+    id: number,
+    product: UpdateProductDTO,
+  ): Promise<ResponseProductDTO> {
+    //obtener campos del productos
+    const { processor_id, system_id, display_id, ...data } = product;
+    //obtener ids
+    //procesador
+    const processor = await this.processorsService.getProcessorById(
+      processor_id ?? 0,
+    );
+    //sistema operativo
+    const system = await this.operatingSystemsService.getOSById(system_id ?? 0);
+    //pantalla
+    const display = await this.displaysService.getDisplayById(display_id ?? 0);
+    //marca
+    const brand = await this.brandsService.getBrandById(product.brand_id ?? 0);
+
+    //actualizar
+    const updatedProduct = await this.productRepository.update(
+      { id },
+      {
+        ...data,
+        ...(processor && { processor }),
+        ...(system && { system }),
+        ...(display && { display }),
+        ...(brand && { brand }),
+      },
+    );
+    //retornar producto actualizado
+    if (updatedProduct.affected === 1) {
+      return this.getProductById(id);
+    }
+    throw new NotFoundException(
+      `No se pudo actualizar el producto con el id: ${id}`,
+    );
+  }
+  //eliminar
+  async deleteProduct(id: number) {
+    const res = await this.productRepository.delete({ id });
+    if (res.affected === 1)
+      return {
+        message: `Se elimino correctamente el registro del producto con id: ${id}`,
+      };
+    throw new NotFoundException(
+      `No se elimino registro del producto con el id: ${id}.`,
+    );
+  }
+  //Obtener filtros
+  async getFilters(): Promise<ResponseProductFiltersDTO> {
+    const brands = await this.brandsService.getBrandsName();
+    const processorBrands = await this.processorsService.getProcessorsBrands();
+    const displaysBrands = await this.displaysService.getDisplaysBrands();
+    return {
+      brands: brands,
+      processors: processorBrands,
+      displays: displaysBrands,
     };
   }
 }
