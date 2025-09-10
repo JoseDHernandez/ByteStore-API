@@ -8,8 +8,8 @@ import {
   Param,
   Query,
   ParseIntPipe,
-  NotFoundException,
   DefaultValuePipe,
+  UseGuards,
 } from '@nestjs/common';
 import { CreateProductDTO } from './dto/create-product.dto';
 import { ProductsService } from './products.service';
@@ -19,6 +19,7 @@ import {
   ResponseProductPaginatedDTO,
 } from './dto/response-product.dto';
 import { UpdateProductDTO } from './dto/update-product.dto';
+import { Public } from 'src/auth/public.decorator';
 //Ruta: /
 @Controller()
 export class ProductsController {
@@ -43,6 +44,7 @@ export class ProductsController {
     return this.productsService.deleteProduct(id);
   }
   //Obtener productos
+  @Public()
   @Get()
   getProducts(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
@@ -73,11 +75,13 @@ export class ProductsController {
     return this.productsService.getProducts();
   }
   //obtener filtros
+  @Public()
   @Get('filters')
   getFilters(): Promise<ResponseProductFiltersDTO> {
     return this.productsService.getFilters();
   }
   //Obtener productor por Id
+  @Public()
   @Get(':id')
   getProduct(
     @Param('id', ParseIntPipe) id: number,

@@ -12,11 +12,13 @@ import { OperatingSystemsService } from './operating_systems.service';
 import { ResponseOperatingSystemDTO } from './dto/response-operating_system.dto';
 import { CreateOperatingSystemDTO } from './dto/create-operating_system.dto';
 import { UpdateOperatingSystemDTO } from './dto/update-operating_system.dto';
+import { Public } from 'src/auth/public.decorator';
 
 @Controller('operating-systems')
 export class OperatingSystemsController {
   constructor(private operatingSystemsService: OperatingSystemsService) {}
   //obtener
+  @Public()
   @Get()
   getOS(): Promise<ResponseOperatingSystemDTO[]> {
     return this.operatingSystemsService.getOS();

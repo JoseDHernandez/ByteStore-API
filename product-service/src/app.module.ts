@@ -9,6 +9,7 @@ import { OperatingSystemsModule } from './operating_systems/operating_systems.mo
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { ImagesModule } from './images/images.module';
+import { AuthModule } from './auth/auth.module';
 @Module({
   imports: [
     //ORM para mysql
@@ -27,9 +28,11 @@ import { ImagesModule } from './images/images.module';
       retryDelay: 3000,
     }),
     //Módulos
+    AuthModule,
     BrandsModule,
     DisplaysModule,
     OperatingSystemsModule,
+    ImagesModule,
     ProductsModule, // El módulo de productos va a lo ultimo,para evitar conflictos /:id con /brands/, etc.
     //Ruta estática para imágenes
     ServeStaticModule.forRoot({
@@ -37,7 +40,6 @@ import { ImagesModule } from './images/images.module';
       serveRoot: '/images',
       serveStaticOptions: { maxAge: '86400', immutable: true },
     }),
-    ImagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

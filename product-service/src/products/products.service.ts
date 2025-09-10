@@ -115,12 +115,12 @@ export class ProductsService {
     if (search.length > 0) {
       search.forEach((term, index) => {
         query.andWhere(
-          '(products.name LIKE :term' +
-            index +
-            ' OR products.model LIKE :term' +
-            index +
-            ')',
-          { ['term' + index]: `%${term}%` },
+          `(products.name LIKE :term${index} 
+        OR products.model LIKE :term${index} 
+        OR brand.name LIKE :term${index} 
+        OR display.brand LIKE :term${index} 
+        OR processor.brand LIKE :term${index})`,
+          { [`term${index}`]: `%${term}%` },
         );
       });
     }

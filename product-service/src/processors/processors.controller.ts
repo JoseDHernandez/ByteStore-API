@@ -12,6 +12,7 @@ import { ProcessorsService } from './processors.service';
 import { CreateProcessorDTO } from './dto/create-processor.dto';
 import { ResponseProcessorDTO } from './dto/response-processor.dto';
 import { UpdateProcessorDTO } from './dto/update-processor.dto';
+import { Public } from 'src/auth/public.decorator';
 
 @Controller('processors')
 export class ProcessorsController {
@@ -24,6 +25,7 @@ export class ProcessorsController {
     return this.processorService.createProcessor(processor);
   }
   //obtener
+  @Public()
   @Get()
   getProcessors(): Promise<ResponseProcessorDTO[]> {
     return this.processorService.getProcessors();
