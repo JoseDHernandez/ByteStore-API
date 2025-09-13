@@ -23,7 +23,7 @@ export class CreateProductDTO {
     size: number;
     resolution: string;
     graphics: string;
-    brand: string | undefined;
+    brand: string;
   };
   brand: string;
 }

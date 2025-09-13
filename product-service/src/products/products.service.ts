@@ -37,11 +37,16 @@ export class ProductsService {
     return {
       ...product,
       image: `${process.env.API_URL || 'http://localhost:3000'}/products/images/${product.image}`,
-      brand: product.brand.name,
+      brand: product.brand.name.toUpperCase(),
       processor,
       system,
       display,
     };
+  }
+  //Capitalizar texto
+  capitalize(value: string): string {
+    if (typeof value !== 'string' || value.length === 0) return value;
+    return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
   }
   //Crear producto
   async createProduct(product: CreateProductDTO) {
@@ -111,17 +116,42 @@ export class ProductsService {
       .innerJoinAndSelect('products.processor', 'processor')
       .innerJoinAndSelect('products.system', 'system');
 
-    //buscar por nombre o modelo
+    //Buscar por nombre, modelo o marca
     if (search.length > 0) {
+      //obtener marcas
+      const processorBrands =
+        await this.processorsService.getProcessorsBrands();
+      const displaysBrands = await this.displaysService.getDisplaysBrands();
+      const processorsBrands = processorBrands.map((e) => {
+        return e.name.toLowerCase();
+      });
+      const graphicsBrands = displaysBrands.map((e) => {
+        return e.name.toLocaleLowerCase();
+      });
+
       search.forEach((term, index) => {
-        query.andWhere(
+        term.toLocaleLowerCase();
+        //buscar por nombre, modelo marca
+        query.orWhere(
           `(products.name LIKE :term${index} 
         OR products.model LIKE :term${index} 
-        OR brand.name LIKE :term${index} 
-        OR display.brand LIKE :term${index} 
-        OR processor.brand LIKE :term${index})`,
+        OR brand.name LIKE :term${index})`,
           { [`term${index}`]: `%${term}%` },
         );
+
+        //concionar procesador
+        if (processorsBrands.includes(term)) {
+          query.orWhere(`processor.brand LIKE :processor${index}`, {
+            [`processor${index}`]: `%${term}%`,
+          });
+        }
+
+        //condicionar grafica
+        if (graphicsBrands.includes(term)) {
+          query.orWhere(`display.brand LIKE :graphic${index}`, {
+            [`graphic${index}`]: `%${term}%`,
+          });
+        }
       });
     }
 
@@ -213,9 +243,15 @@ export class ProductsService {
     const processorBrands = await this.processorsService.getProcessorsBrands();
     const displaysBrands = await this.displaysService.getDisplaysBrands();
     return {
-      brands: brands,
-      processors: processorBrands,
-      displays: displaysBrands,
+      brands: brands.map((b) => ({ ...b, name: this.capitalize(b.name) })),
+      processors: processorBrands.map((p) => ({
+        ...p,
+        name: this.capitalize(p.name),
+      })),
+      displays: displaysBrands.map((d) => ({
+        ...d,
+        name: this.capitalize(d.name),
+      })),
     };
   }
 }

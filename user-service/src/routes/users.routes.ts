@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   changeRole,
   deleteUser,
+  getUserById,
   getUsers,
   getUsersPaginated,
   updatePassword,
@@ -11,6 +12,7 @@ import { authMiddleware, isAdmin } from "../middleware/auth.ts";
 const router = Router();
 
 router.get("/", authMiddleware, isAdmin, getUsersPaginated);
+router.get("/:id", authMiddleware, getUserById);
 router.get("/all", authMiddleware, isAdmin, getUsers);
 router.put("/:id", authMiddleware, updateUser);
 router.delete("/:id", authMiddleware, deleteUser);

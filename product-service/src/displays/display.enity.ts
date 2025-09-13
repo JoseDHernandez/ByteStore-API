@@ -9,6 +9,6 @@ export class Display {
   resolution: string;
   @Column()
   graphics: string;
-  @Column({ nullable: true })
+  @Column()
   brand: string;
 }

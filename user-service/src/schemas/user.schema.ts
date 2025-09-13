@@ -118,7 +118,6 @@ export const changeRoleSchema = z.object({
   role: z.enum(["administrador", "cliente"]),
 });
 //Buscar usuario
-
 export const searchUserSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
@@ -129,4 +128,8 @@ export const searchUserSchema = z.object({
     .max(200, "No puede exceder 200 caracteres")
     .regex(/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/, "Solo letras y espacios para el nombre")
     .default(""),
+});
+//validar id
+export const userIdSchema = z.object({
+  id: z.uuidv7().trim(),
 });

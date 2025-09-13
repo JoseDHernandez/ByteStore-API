@@ -7,6 +7,7 @@ import {
   searchUserSchema,
   updatePasswordSchema,
   updateSchema,
+  userIdSchema,
   uuidSchema,
 } from "../schemas/user.schema.ts";
 import type { ResultSetHeader } from "mysql2";
@@ -23,6 +24,41 @@ export const getUsers = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "0 users" });
     }
     return res.status(200).json({ total: data.length, data });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error", error });
+  }
+};
+//obtener usuario por id
+export const getUserById = async (req: Request, res: Response) => {
+  try {
+    //Obtener datos
+    const { id } = req.params;
+    const dataBody = userIdSchema.safeParse({
+      id,
+    });
+    //Validar
+    if (!dataBody.success)
+      return res.status(400).json({
+        message: "Invalid data",
+        errors: dataBody.error.format,
+      });
+    //Validar cuenta
+    const data = dataBody.data;
+    if (data.id !== req.auth?.id && req.auth?.role !== "ADMINISTRADOR")
+      return res.status(401).json({ message: "Invalid role" });
+    const [selectSQL] = await db.query<User[]>(
+      "SELECT name,email,physical_address FROM users WHERE id=?",
+      [data.id]
+    );
+    if (selectSQL[0]) {
+      const dto: UserResponseDTO = {
+        ...selectSQL[0],
+        role: req.auth?.role === "ADMINISTRADOR" ? "ADMINISTRADOR" : "CLIENTE",
+        id: data.id,
+      };
+      return res.status(200).json({ data: dto });
+    }
+    return res.status(404).json({ message: "Account not found" });
   } catch (error) {
     return res.status(500).json({ message: "Server error", error });
   }

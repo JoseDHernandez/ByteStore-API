@@ -50,20 +50,24 @@ export class ProductsController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
     @Query('limit', new DefaultValuePipe(15), ParseIntPipe) per_page?: number,
     @Query('search') search?: string,
-    @Query('order_price') order_price?: 'ASC' | 'DESC',
-    @Query('order_review') order_review?: 'ASC' | 'DESC',
+    @Query('sort') sort?: 'order_price' | 'order_review',
+    @Query('order') order?: 'ASC' | 'DESC',
   ): Promise<ResponseProductDTO[] | ResponseProductPaginatedDTO> {
     //Paginación sola
-    if (per_page || page || search || order_price || order_review) {
+    if (per_page || page || search || sort || order) {
       //Valores por defecto
-      const pageNum = page && page > 0 ? page : 1;
-      const perPageNum = per_page && per_page > 0 ? per_page : 15;
-      const queryTerms = search?.split(',').map((s) => s.trim()) ?? [];
-      const sortPrice =
-        order_price === 'ASC' || order_price === 'DESC' ? order_price : null;
-      const sortReview =
-        order_review === 'ASC' || order_review === 'DESC' ? order_review : null;
-
+      const pageNum = page && page > 0 ? page : 1; // numero de pagina
+      const perPageNum = per_page && per_page > 0 ? per_page : 15; //cantidad por pagina
+      const queryTerms = search
+        ? decodeURIComponent(search)
+            .split(',')
+            .map((s) => s.trim())
+        : []; //separar términos por ,
+      const orderType =
+        order && order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC'; //Establecer orden
+      //typos de orden
+      const sortPrice = sort && sort === 'order_price' ? orderType : null;
+      const sortReview = sort && sort === 'order_review' ? orderType : null;
       return this.productsService.getProductsPaginated(
         pageNum,
         perPageNum,

@@ -50,6 +50,26 @@ En caso de error retornan en el json un campo `message` y si el estado es 500 un
 
 ---
 
+## Obtener usuario
+
+**GET** `/users/:id`
+
+Retorna los datos del usuario por su ID.
+
+**Respuesta**
+
+```json
+{
+  "data": {
+    "id": "01991c0e-16f0-707f-9f6f-3614666caead",
+    "name": "José David Hernández",
+    "email": "jose.hernandez@test.com",
+    "physical_address": "Calle 12 #67-56",
+    "role": "ADMINISTRADOR"
+  }
+}
+```
+
 ## Obtener usuarios (solo Administradores)
 
 ### Todos los usuarios

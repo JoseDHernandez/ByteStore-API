@@ -7,6 +7,7 @@ import { BrandsModule } from './brands/brands.module';
 import { DisplaysModule } from './displays/displays.module';
 import { OperatingSystemsModule } from './operating_systems/operating_systems.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ProcessorsModule } from './processors/processors.module';
 import { join } from 'path';
 import { ImagesModule } from './images/images.module';
 import { AuthModule } from './auth/auth.module';
@@ -33,6 +34,7 @@ import { AuthModule } from './auth/auth.module';
     DisplaysModule,
     OperatingSystemsModule,
     ImagesModule,
+    ProcessorsModule,
     ProductsModule, // El módulo de productos va a lo ultimo,para evitar conflictos /:id con /brands/, etc.
     //Ruta estática para imágenes
     ServeStaticModule.forRoot({
