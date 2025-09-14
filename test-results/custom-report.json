@@ -1,0 +1,442 @@
+{
+  "timestamp": "2025-09-14T02:37:29.311Z",
+  "summary": {
+    "total_requests": 13,
+    "successful_requests": 9,
+    "failed_requests": 4,
+    "total_tests": 13,
+    "failed_tests": 0,
+    "success_rate": "NaN",
+    "execution_time_ms": 7966
+  },
+  "failures": [
+    {
+      "source": "Register User",
+      "error": "expected response to have status code 201 but got 400",
+      "test": "Status code is 201"
+    },
+    {
+      "source": "Register User",
+      "error": "expected { message: 'Invalid data' } to have property 'data'",
+      "test": "Response has user data"
+    },
+    {
+      "source": "Login User",
+      "error": "expected response to have status code 200 but got 404",
+      "test": "Status code is 200"
+    },
+    {
+      "source": "Login User",
+      "error": "Target cannot be null or undefined.",
+      "test": "Response has token and user data"
+    },
+    {
+      "source": "Login User",
+      "error": "Cannot read properties of undefined (reading 'token')",
+      "test": "Token is valid JWT format"
+    },
+    {
+      "source": "Get Orders",
+      "error": "socket hang up"
+    },
+    {
+      "source": "Get Orders",
+      "error": "expected undefined to be a number or a date",
+      "test": "No server errors (5xx)"
+    },
+    {
+      "source": "Get Orders",
+      "error": "expected undefined to be a number or a date",
+      "test": "Response time is acceptable"
+    },
+    {
+      "source": "Get Orders",
+      "error": "expected response body to be a valid json but got error \"undefined\" is not valid JSON",
+      "test": "Response is valid JSON"
+    },
+    {
+      "source": "Create Order",
+      "error": "socket hang up"
+    },
+    {
+      "source": "Create Order",
+      "error": "expected undefined to be a number or a date",
+      "test": "No server errors (5xx)"
+    },
+    {
+      "source": "Create Order",
+      "error": "expected undefined to be a number or a date",
+      "test": "Response time is acceptable"
+    },
+    {
+      "source": "Create Order",
+      "error": "expected response body to be a valid json but got error \"undefined\" is not valid JSON",
+      "test": "Response is valid JSON"
+    },
+    {
+      "source": "Get Reviews",
+      "error": "socket hang up"
+    },
+    {
+      "source": "Get Reviews",
+      "error": "expected undefined to be a number or a date",
+      "test": "No server errors (5xx)"
+    },
+    {
+      "source": "Get Reviews",
+      "error": "expected undefined to be a number or a date",
+      "test": "Response time is acceptable"
+    },
+    {
+      "source": "Get Reviews",
+      "error": "expected response body to be a valid json but got error \"undefined\" is not valid JSON",
+      "test": "Response is valid JSON"
+    },
+    {
+      "source": "Create Review",
+      "error": "socket hang up"
+    },
+    {
+      "source": "Create Review",
+      "error": "expected undefined to be a number or a date",
+      "test": "No server errors (5xx)"
+    },
+    {
+      "source": "Create Review",
+      "error": "expected undefined to be a number or a date",
+      "test": "Response time is acceptable"
+    },
+    {
+      "source": "Create Review",
+      "error": "expected response body to be a valid json but got error \"undefined\" is not valid JSON",
+      "test": "Response is valid JSON"
+    }
+  ],
+  "executions": [
+    {
+      "item": "Register User",
+      "request": {
+        "method": "POST",
+        "url": "http://localhost:3002/sign-up",
+        "response_time": 13,
+        "status_code": 400,
+        "status": "Bad Request"
+      },
+      "tests": [
+        {
+          "name": "No server errors (5xx)",
+          "passed": true
+        },
+        {
+          "name": "Response time is acceptable",
+          "passed": true
+        },
+        {
+          "name": "Response is valid JSON",
+          "passed": true
+        },
+        {
+          "name": "Status code is 201",
+          "passed": false,
+          "error": "expected response to have status code 201 but got 400"
+        },
+        {
+          "name": "Response has user data",
+          "passed": false,
+          "error": "expected { message: 'Invalid data' } to have property 'data'"
+        }
+      ]
+    },
+    {
+      "item": "Login User",
+      "request": {
+        "method": "POST",
+        "url": "http://localhost:3002/sign-in",
+        "response_time": 4,
+        "status_code": 404,
+        "status": "Not Found"
+      },
+      "tests": [
+        {
+          "name": "No server errors (5xx)",
+          "passed": true
+        },
+        {
+          "name": "Response time is acceptable",
+          "passed": true
+        },
+        {
+          "name": "Status code is 200",
+          "passed": false,
+          "error": "expected response to have status code 200 but got 404"
+        },
+        {
+          "name": "Response has token and user data",
+          "passed": false,
+          "error": "Target cannot be null or undefined."
+        },
+        {
+          "name": "Token is valid JWT format",
+          "passed": false,
+          "error": "Cannot read properties of undefined (reading 'token')"
+        }
+      ]
+    },
+    {
+      "item": "Login Invalid Credentials",
+      "request": {
+        "method": "POST",
+        "url": "http://localhost:3002/sign-in",
+        "response_time": 3,
+        "status_code": 404,
+        "status": "Not Found"
+      },
+      "tests": [
+        {
+          "name": "No server errors (5xx)",
+          "passed": true
+        },
+        {
+          "name": "Response time is acceptable",
+          "passed": true
+        },
+        {
+          "name": "Status code is 401 or 404",
+          "passed": true
+        },
+        {
+          "name": "Response has error message",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "item": "Get Users Paginated",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:3002/?page=1&limit=10",
+        "response_time": 2,
+        "status_code": 401,
+        "status": "Unauthorized"
+      },
+      "tests": [
+        {
+          "name": "No server errors (5xx)",
+          "passed": true
+        },
+        {
+          "name": "Response time is acceptable",
+          "passed": true
+        },
+        {
+          "name": "Response is valid JSON",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "item": "Get User by ID",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:3002/",
+        "response_time": 2,
+        "status_code": 401,
+        "status": "Unauthorized"
+      },
+      "tests": [
+        {
+          "name": "No server errors (5xx)",
+          "passed": true
+        },
+        {
+          "name": "Response time is acceptable",
+          "passed": true
+        },
+        {
+          "name": "Response is valid JSON",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "item": "Update User",
+      "request": {
+        "method": "PUT",
+        "url": "http://localhost:3002/",
+        "response_time": 2,
+        "status_code": 404,
+        "status": "Not Found"
+      },
+      "tests": [
+        {
+          "name": "No server errors (5xx)",
+          "passed": true
+        },
+        {
+          "name": "Response time is acceptable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "item": "Get Products",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:3001/products?page=1&limit=10",
+        "response_time": 5,
+        "status_code": 400,
+        "status": "Bad Request"
+      },
+      "tests": [
+        {
+          "name": "No server errors (5xx)",
+          "passed": true
+        },
+        {
+          "name": "Response time is acceptable",
+          "passed": true
+        },
+        {
+          "name": "Response is valid JSON",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "item": "Get Product by ID",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:3001/products/1",
+        "response_time": 2,
+        "status_code": 404,
+        "status": "Not Found"
+      },
+      "tests": [
+        {
+          "name": "No server errors (5xx)",
+          "passed": true
+        },
+        {
+          "name": "Response time is acceptable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "item": "Create Product",
+      "request": {
+        "method": "POST",
+        "url": "http://localhost:3001/products",
+        "response_time": 3,
+        "status_code": 404,
+        "status": "Not Found"
+      },
+      "tests": [
+        {
+          "name": "No server errors (5xx)",
+          "passed": true
+        },
+        {
+          "name": "Response time is acceptable",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "item": "Get Orders",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:3004/orders"
+      },
+      "tests": [
+        {
+          "name": "No server errors (5xx)",
+          "passed": false,
+          "error": "expected undefined to be a number or a date"
+        },
+        {
+          "name": "Response time is acceptable",
+          "passed": false,
+          "error": "expected undefined to be a number or a date"
+        },
+        {
+          "name": "Response is valid JSON",
+          "passed": false,
+          "error": "expected response body to be a valid json but got error \"undefined\" is not valid JSON"
+        }
+      ]
+    },
+    {
+      "item": "Create Order",
+      "request": {
+        "method": "POST",
+        "url": "http://localhost:3004/orders"
+      },
+      "tests": [
+        {
+          "name": "No server errors (5xx)",
+          "passed": false,
+          "error": "expected undefined to be a number or a date"
+        },
+        {
+          "name": "Response time is acceptable",
+          "passed": false,
+          "error": "expected undefined to be a number or a date"
+        },
+        {
+          "name": "Response is valid JSON",
+          "passed": false,
+          "error": "expected response body to be a valid json but got error \"undefined\" is not valid JSON"
+        }
+      ]
+    },
+    {
+      "item": "Get Reviews",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:3003/reviews"
+      },
+      "tests": [
+        {
+          "name": "No server errors (5xx)",
+          "passed": false,
+          "error": "expected undefined to be a number or a date"
+        },
+        {
+          "name": "Response time is acceptable",
+          "passed": false,
+          "error": "expected undefined to be a number or a date"
+        },
+        {
+          "name": "Response is valid JSON",
+          "passed": false,
+          "error": "expected response body to be a valid json but got error \"undefined\" is not valid JSON"
+        }
+      ]
+    },
+    {
+      "item": "Create Review",
+      "request": {
+        "method": "POST",
+        "url": "http://localhost:3003/reviews"
+      },
+      "tests": [
+        {
+          "name": "No server errors (5xx)",
+          "passed": false,
+          "error": "expected undefined to be a number or a date"
+        },
+        {
+          "name": "Response time is acceptable",
+          "passed": false,
+          "error": "expected undefined to be a number or a date"
+        },
+        {
+          "name": "Response is valid JSON",
+          "passed": false,
+          "error": "expected response body to be a valid json but got error \"undefined\" is not valid JSON"
+        }
+      ]
+    }
+  ]
+}
