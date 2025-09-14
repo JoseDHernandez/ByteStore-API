@@ -24,7 +24,7 @@ create table `processors`(
 );
 create table brands (
   id int not null auto_increment,
-  name varchar(200) not null unique,
+  name varchar(50) not null unique,
   primary key (id)
 );
 

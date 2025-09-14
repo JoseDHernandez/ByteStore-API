@@ -5,6 +5,7 @@ import {
   Param,
   Body,
   Delete,
+  Post,
   NotFoundException,
 } from '@nestjs/common';
 import { BrandsService } from './brands.service';
@@ -12,6 +13,7 @@ import { Get } from '@nestjs/common';
 import { ResponseBrandDTO } from './dto/response-brand.dto';
 import { UpdateBrandDTO } from './dto/update-brand.dto';
 import { Public } from 'src/auth/public.decorator';
+import { CreateBrandDTO } from './dto/create-brand.dto';
 @Controller('brands')
 export class BrandsController {
   constructor(private brandsService: BrandsService) {}
@@ -45,5 +47,10 @@ export class BrandsController {
   @Delete(':id')
   deleteBrand(@Param('id', ParseIntPipe) id: number) {
     return this.brandsService.deleteBrand(id);
+  }
+  //crear
+  @Post()
+  createBrand(@Body() brand: CreateBrandDTO): Promise<ResponseBrandDTO> {
+    return this.brandsService.createBrand(brand);
   }
 }

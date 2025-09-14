@@ -14,7 +14,7 @@ services:
       - app_network
 
   # ==========================
-  # Product Service (NestJS)
+  # Product Service (NestJS + mysql)
   # ==========================
   product-service:
     build:
@@ -54,7 +54,7 @@ services:
       - app_network
 
   # ==========================
-  # User Service (Express)
+  # User Service (Express + mysql)
   # ==========================
   user-service:
     build:
@@ -93,12 +93,46 @@ services:
     networks:
       - app_network
 
+   # ==========================
+  # Cart Service (Express + MongoDB)
+  # ==========================
+  cart-service:
+    build:
+      context: ./cart-service
+      dockerfile: dockerfile.dev
+    container_name: cart_service
+    restart: always
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: 3003   # Puerto donde corre Express
+      MONGO_URI: mongodb://cart-db:27017/cartdb
+    volumes:
+      - ./cart-service/src:/usr/src/app/src
+      - /usr/src/app/node_modules
+    depends_on:
+      - cart-db
+    networks:
+      - app_network
+
+  cart-db:
+    image: mongo:latest
+    container_name: mongo_cart
+    restart: always
+    ports:
+      - "3309:27017"
+    volumes:
+      - ./cart-service/mongo_data:/data/db
+    networks:
+      - app_network
+
 # ==========================
 # Volumenes
 # ==========================
 volumes:
   product_data:
   user_data:
+  cart_data:
 # ==========================
 # Networks
 # ==========================
