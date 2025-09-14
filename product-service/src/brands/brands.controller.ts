@@ -5,6 +5,7 @@ import {
   Param,
   Body,
   Delete,
+  NotFoundException,
 } from '@nestjs/common';
 import { BrandsService } from './brands.service';
 import { Get } from '@nestjs/common';
@@ -19,6 +20,18 @@ export class BrandsController {
   @Get()
   getBrands(): Promise<ResponseBrandDTO[]> {
     return this.brandsService.getBrands();
+  }
+  //id
+  @Public()
+  @Get('id')
+  async getBrand(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ResponseBrandDTO> {
+    const res = await this.brandsService.getBrandById(id);
+    if (!res) {
+      throw new NotFoundException(`No se encontró la marca con el id: ${id}`);
+    }
+    return res;
   }
   //Actualizar marca
   @Patch(':id')

@@ -29,8 +29,8 @@ export class ProcessorsService {
     //Retornar
     if (findProcessor) return findProcessor;
     //crear procesador
-    const newProcessor = this.processorRepository.create();
-    return this.processorRepository.create(newProcessor);
+    const newProcessor = this.processorRepository.create(processor);
+    return this.processorRepository.save(newProcessor);
   }
   //obtener
   getProcessors(): Promise<ResponseProcessorDTO[]> {

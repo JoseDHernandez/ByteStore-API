@@ -52,16 +52,16 @@ create table `products`(
 );
 create index index_product_name on products (name);
 create index index_product_model on products (model);
-- INSERTS FOR operating_systems
+-- INSERTS FOR operating_systems
 INSERT INTO operating_systems ( `system`, distribution) VALUES ( 'Windows', 'Windows 11 Home');
 INSERT INTO operating_systems ( `system`, distribution) VALUES ( 'Windows', 'Windows 11');
 INSERT INTO operating_systems ( `system`, distribution) VALUES ( 'Windows', 'Windows 11 Pro');
 INSERT INTO operating_systems ( `system`, distribution) VALUES ( 'MacOs', 'MacOs Sequoia');
 
 -- INSERTS FOR processors
-INSERT INTO processors ( brand, family, model, cores, speed) VALUES ('Intel', 'Intel Core I3', 'N305', 8, 'Hasta 3,8 GHz con tecnología Intel® Turbo Boost, 6 MB de caché L3, 8 núcleos y 8 subprocesos.');
+INSERT INTO processors ( brand, family, model, cores, speed) VALUES ('Intel', 'Intel Core I3', 'N305', 8, 'Hasta 3,8 GHz con tecnología Intel Turbo Boost, 6 MB de caché L3, 8 núcleos y 8 subprocesos.');
 INSERT INTO processors ( brand, family, model, cores, speed) VALUES ('AMD', 'Ryzen 5', '8640HS', 6, '(12T, 3.5 / 4.9GHz, 6MB L2 / 16MB L3)');
-INSERT INTO processors ( brand, family, model, cores, speed) VALUES ('Intel', 'Intel Core I5', '125H', 14, 'Hasta 4.5 GHz con Intel® Turbo Boost Technology, 18 MB L3 caché, 14 núcleos, 18 hilos');
+INSERT INTO processors ( brand, family, model, cores, speed) VALUES ('Intel', 'Intel Core I5', '125H', 14, 'Hasta 4.5 GHz con Intel Turbo Boost Technology, 18 MB L3 caché, 14 núcleos, 18 hilos');
 INSERT INTO processors ( brand, family, model, cores, speed) VALUES ('AMD', 'Ryzen 7', '7730U', 8, 'Velocidad de ráfaga máxima de hasta 4,5 GHz, 16 MB de caché L3, 8 núcleos y 16 subprocesos');
 INSERT INTO processors ( brand, family, model, cores, speed) VALUES ('Intel', 'Intel Core I5', '210H', 8, '2.2 GHz (12MB Cache, up to 4.8 GHz, 8 cores, 12 Threads)');
 INSERT INTO processors ( brand, family, model, cores, speed) VALUES ('Intel', 'Intel Core I5', '13420H', 8, 'Hasta 4,6 GHz con tecnología Intel Turbo Boost,12 MB de caché L3, 8 núcleos y 12 subprocesos.');
@@ -80,33 +80,33 @@ INSERT INTO processors ( brand, family, model, cores, speed) VALUES ('Apple', 'A
 INSERT INTO processors ( brand, family, model, cores, speed) VALUES ('AMD', 'Ryzen 5', '8645H', 6, 'Hasta 5,0 GHz , 16 MB de caché L3, 06 núcleos y 12 subprocesos');
 INSERT INTO processors ( brand, family, model, cores, speed) VALUES ('Intel', 'Intel Core I9', '185H', 16, '2.3 GHz (24MB Cache, up to 5.1 GHz, 16 cores, 22 Threads)');
 INSERT INTO processors ( brand, family, model, cores, speed) VALUES ('Intel', 'Intel Core I7', '155H', 16, '4.8 Ghz');
-INSERT INTO processors ( brand, family, model, cores, speed) VALUES ('AMD', 'Ryzen 9', 'HX370', 12, '2.0 GHz (36MB Cache, up to 5.1GHz, 12 cores, 24 Threads), AMD Ryzen™ AI up to 81 TOPs');
+INSERT INTO processors ( brand, family, model, cores, speed) VALUES ('AMD', 'Ryzen 9', 'HX370', 12, '2.0 GHz (36MB Cache, up to 5.1GHz, 12 cores, 24 Threads), AMD Ryzen AI up to 81 TOPs');
 INSERT INTO processors ( brand, family, model, cores, speed) VALUES ('Intel', 'Intel Core I9', '275HX', 24, '2.7 GHz (36MB Cache, up to 5.4 GHz, 24 cores, 24 Threads)');
 
 -- INSERTS FOR displays
 INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 15.6, 'Full HD', 'Gráficos integrados', 'Intel Graphics');
 INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 15.3, 'WUXGA', 'Gráficos integrados', 'AMD Radeon');
 INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 15.6, 'Full HD', 'Gráficos integrados', 'AMD Radeon');
-INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 16, 'Full HD', 'GeForce® RTX 3050', 'NVIDIA');
+INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 16, 'Full HD', 'GeForce RTX 3050', 'NVIDIA');
 INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 14, 'WUXGA', 'Gráficos integrados', 'AMD Radeon');
 INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 15.3, 'WUXGA', 'Gráficos integrados', 'Intel Graphics');
 INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 14, 'Full HD', 'Gráficos integrados', 'Intel Graphics');
 INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 16, 'WUXGA', 'Gráficos integrados', 'Intel Graphics');
-INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 16, 'WUXGA', 'GeForce® RTX 3050', 'NVIDIA');
+INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 16, 'WUXGA', 'GeForce RTX 3050', 'NVIDIA');
 INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 14, 'Full HD', 'Gráficos integrados', 'AMD Radeon');
-INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 15.6, 'Full HD', 'GeForce® RTX 4050', 'NVIDIA');
-INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 15.6, 'Full HD', 'GeForce® RTX 3050', 'NVIDIA');
+INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 15.6, 'Full HD', 'GeForce RTX 4050', 'NVIDIA');
+INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 15.6, 'Full HD', 'GeForce RTX 3050', 'NVIDIA');
 INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 14, 'WUXGA', 'Gráficos integrados', 'Intel Graphics');
 INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 13.6, 'Retina', 'Gráficos integrados', 'Apple');
 INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 13, 'Retina', 'Gráficos integrados', 'Apple');
 INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 14, 'OLED', 'Gráficos integrados', 'Intel Graphics');
-INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 17.3, 'Full HD', 'GeForce® RTX 4060', 'NVIDIA');
+INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 17.3, 'Full HD', 'GeForce RTX 4060', 'NVIDIA');
 INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 14, 'OLED', 'Gráficos integrados', 'Intel Graphics');
-INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 16, 'WQXGA', 'GeForce® RTX 4070', 'NVIDIA');
+INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 16, 'WQXGA', 'GeForce RTX 4070', 'NVIDIA');
 INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 14, 'Full HD', 'Iris Xe Graphics', 'Intel Graphics');
-INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 15.6, 'Full HD', 'GeForce® RTX 4060', 'NVIDIA');
+INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 15.6, 'Full HD', 'GeForce RTX 4060', 'NVIDIA');
 INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 16, 'OLED', 'Gráficos integrados', 'AMD Radeon');
-INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 18, 'WQXGA', 'GeForce® RTX 5070 Ti', 'NVIDIA');
+INSERT INTO displays ( size, resolution, graphics, brand) VALUES ( 18, 'WQXGA', 'GeForce RTX 5070 Ti', 'NVIDIA');
 
 -- INSERTS FOR brands
 INSERT INTO brands (id, name) VALUES (1, 'HP');

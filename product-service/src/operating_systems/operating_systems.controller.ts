@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  NotFoundException,
 } from '@nestjs/common';
 import { OperatingSystemsService } from './operating_systems.service';
 import { ResponseOperatingSystemDTO } from './dto/response-operating_system.dto';
@@ -22,6 +23,19 @@ export class OperatingSystemsController {
   @Get()
   getOS(): Promise<ResponseOperatingSystemDTO[]> {
     return this.operatingSystemsService.getOS();
+  }
+  //obtener por id
+  @Public()
+  @Get(':id')
+  async getOSById(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ResponseOperatingSystemDTO> {
+    const res = await this.operatingSystemsService.getOSById(id);
+    if (!res)
+      throw new NotFoundException(
+        `No se encontró el sistema operativo con el id: ${id}`,
+      );
+    return res;
   }
   //crear
   @Post()

@@ -194,7 +194,7 @@ export class ProductsService {
     product: UpdateProductDTO,
   ): Promise<ResponseProductDTO> {
     //obtener campos del productos
-    const { processor_id, system_id, display_id, ...data } = product;
+    const { processor_id, system_id, display_id, brand_id, ...data } = product;
     //obtener ids
     //procesador
     const processor = await this.processorsService.getProcessorById(
@@ -205,7 +205,7 @@ export class ProductsService {
     //pantalla
     const display = await this.displaysService.getDisplayById(display_id ?? 0);
     //marca
-    const brand = await this.brandsService.getBrandById(product.brand_id ?? 0);
+    const brand = await this.brandsService.getBrandById(brand_id ?? 0);
 
     //actualizar
     const updatedProduct = await this.productRepository.update(

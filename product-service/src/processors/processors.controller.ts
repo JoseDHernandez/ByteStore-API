@@ -7,6 +7,7 @@ import {
   Delete,
   Get,
   ParseIntPipe,
+  NotFoundException,
 } from '@nestjs/common';
 import { ProcessorsService } from './processors.service';
 import { CreateProcessorDTO } from './dto/create-processor.dto';
@@ -29,6 +30,20 @@ export class ProcessorsController {
   @Get()
   getProcessors(): Promise<ResponseProcessorDTO[]> {
     return this.processorService.getProcessors();
+  }
+  //obtener id
+  @Public()
+  @Get(':id')
+  async getProcessor(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ResponseProcessorDTO> {
+    const res = await this.processorService.getProcessorById(id);
+    if (!res) {
+      throw new NotFoundException(
+        `No se encontró el procesador con el id: ${id}`,
+      );
+    }
+    return res;
   }
   //actualizar
   @Put(':id')
