@@ -1,0 +1,26 @@
+services:
+  cart-api:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: cart_api_dev
+    restart: always
+    ports:
+      - "5000:8000"
+    environment:
+      PORT: 8000
+      MONGO_URI: mongodb://mongo:27017/bytestore_cart
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:latest
+    container_name: bytestore_cart
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
