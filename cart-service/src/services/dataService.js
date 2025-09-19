@@ -87,10 +87,11 @@ class DataService {
   }
 
   async createCart(cartData) {
-    const data = await this.readData();
-    data.carts.push(cartData);
-    await this.writeData(data);
-    return cartData;
+  const data = await this.readData();
+  data.carts.push(cartData);
+  await this.writeData(data);
+  // Ajuste: retorna una tupla [cartData, 'ok']
+  return [cartData, 'ok'];
   }
 
   async updateCart(id, updates) {
