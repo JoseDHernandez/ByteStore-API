@@ -7,7 +7,6 @@ import {
   ResponseBrandDTO,
   ResponseBrandsNameDTO,
 } from './dto/response-brand.dto';
-import { UpdateBrandDTO } from './dto/update-brand.dto';
 
 @Injectable()
 export class BrandsService {
@@ -41,7 +40,7 @@ export class BrandsService {
   //actualizar marca
   async updateBrand(
     id: number,
-    brand: UpdateBrandDTO,
+    brand: CreateBrandDTO,
   ): Promise<ResponseBrandDTO> {
     const updateBrand = await this.brandsRepository.update(
       { id },

@@ -9,7 +9,7 @@ import {
   Query,
   ParseIntPipe,
   DefaultValuePipe,
-  UseGuards,
+  Header,
 } from '@nestjs/common';
 import { CreateProductDTO } from './dto/create-product.dto';
 import { ProductsService } from './products.service';
@@ -20,6 +20,7 @@ import {
 } from './dto/response-product.dto';
 import { UpdateProductDTO } from './dto/update-product.dto';
 import { Public } from 'src/auth/public.decorator';
+import { CacheKey, CacheTTL } from '@nestjs/cache-manager';
 //Ruta: /
 @Controller()
 export class ProductsController {
@@ -46,6 +47,9 @@ export class ProductsController {
   //Obtener productos
   @Public()
   @Get()
+  @CacheKey('products_paginated')
+  @CacheTTL(300)
+  @Header('Cache-Control', 'public, max-age=600')
   getProducts(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
     @Query('limit', new DefaultValuePipe(15), ParseIntPipe) per_page?: number,
@@ -81,12 +85,18 @@ export class ProductsController {
   //obtener filtros
   @Public()
   @Get('filters')
+  @CacheKey('products_filters')
+  @CacheTTL(600)
+  @Header('Cache-Control', 'public, max-age=600')
   getFilters(): Promise<ResponseProductFiltersDTO> {
     return this.productsService.getFilters();
   }
   //Obtener productor por Id
   @Public()
   @Get(':id')
+  @CacheKey('product_id')
+  @CacheTTL(600)
+  @Header('Cache-Control', 'public, max-age=600')
   getProduct(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<ResponseProductDTO> {

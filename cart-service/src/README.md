@@ -1,4 +1,3 @@
-
 # Servicio de Carritos - ByteStore
 
 ## ¿Qué hace este servicio?
@@ -54,7 +53,7 @@ Todas las rutas requieren un JWT válido. Ahora solo se usa el header `Authoriza
   "last": 5,
   "pages": 5,
   "items": 50,
-  "data": [ ...carritos... ]
+  "data": product[]
 }
 ```
 

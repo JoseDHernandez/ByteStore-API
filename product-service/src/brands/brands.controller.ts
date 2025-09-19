@@ -11,7 +11,6 @@ import {
 import { BrandsService } from './brands.service';
 import { Get } from '@nestjs/common';
 import { ResponseBrandDTO } from './dto/response-brand.dto';
-import { UpdateBrandDTO } from './dto/update-brand.dto';
 import { Public } from 'src/auth/public.decorator';
 import { CreateBrandDTO } from './dto/create-brand.dto';
 @Controller('brands')
@@ -39,7 +38,7 @@ export class BrandsController {
   @Patch(':id')
   updateBrand(
     @Param('id', ParseIntPipe) id: number,
-    @Body() brand: UpdateBrandDTO,
+    @Body() brand: CreateBrandDTO,
   ): Promise<ResponseBrandDTO> {
     return this.brandsService.updateBrand(id, brand);
   }
