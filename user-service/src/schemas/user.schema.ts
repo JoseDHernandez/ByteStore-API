@@ -56,9 +56,9 @@ export const loginSchema = z.object({
 });
 //Actualizar
 export const updateSchema = z.object({
-  id: z.uuidv7().trim(),
+  id: z.uuidv7({ message: "El id debe ser un UUIDv7 válido" }),
   name: z
-    .string()
+    .string({ message: "El nombre es requerido" })
     .trim()
     .min(6, "Debe tener al menos 6 caracteres")
     .max(200, "No puede exceder 200 caracteres")
@@ -67,13 +67,13 @@ export const updateSchema = z.object({
       "Solo letras y espacios para el nombre"
     ),
   email: z
-    .email("Email inválido")
+    .email({ message: "El email es requerido" })
     .trim()
     .min(5, "El email debe tener al menos 5 caracteres")
     .max(300, "El email no puede exceder 300 caracteres")
     .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Email no válido"),
   physical_address: z
-    .string()
+    .string({ message: "La dirección es requerida" })
     .trim()
     .min(2, "La dirección es muy corta")
     .max(100, "La dirección no debe exceder 100 caracteres")
@@ -82,11 +82,12 @@ export const updateSchema = z.object({
       "Caracteres inválidos en la dirección"
     ),
 });
+
 //Actualizar contraseña
 export const updatePasswordSchema = z.object({
-  id: z.uuidv7().trim(),
+  id: z.uuidv7({ message: "El id debe ser un UUIDv7 válido" }),
   password: z
-    .string()
+    .string({ message: "La contraseña es requerida" })
     .trim()
     .min(8, "La contraseña debe tener al menos 8 caracteres")
     .max(20, "La contraseña no debe exceder los 20 caracteres")
@@ -95,11 +96,12 @@ export const updatePasswordSchema = z.object({
       "La contraseña debe incluir mayúscula, minúscula, número y carácter especial"
     ),
 });
+
 //Eliminar
 export const deleteSchema = z.object({
-  id: z.uuidv7().trim(),
+  id: z.uuidv7({ message: "El id debe ser un UUIDv7 válido" }),
   password: z
-    .string()
+    .string({ message: "La contraseña es requerida" })
     .trim()
     .min(8, "La contraseña debe tener al menos 8 caracteres")
     .max(20, "La contraseña no debe exceder los 20 caracteres")
@@ -108,15 +110,27 @@ export const deleteSchema = z.object({
       "La contraseña debe incluir mayúscula, minúscula, número y carácter especial"
     ),
 });
+
 //Eliminar por administrador
 export const uuidSchema = z.object({
-  id: z.uuidv7().trim(),
+  id: z.uuidv7({ message: "El id debe ser un UUIDv7 válido" }),
 });
+
 //Actualizar rol
 export const changeRoleSchema = z.object({
-  id: z.uuidv7("Expected uuidv7").trim(),
-  role: z.enum(["administrador", "cliente"]),
+  id: z.uuidv7({ message: "El id debe ser un UUIDv7 válido" }),
+  role: z
+    .enum(["administrador", "cliente"], {
+      message: "El rol debe ser administrador o cliente",
+    })
+    .pipe(z.transform((val) => val.toLowerCase())),
 });
+
+//validar id
+export const userIdSchema = z.object({
+  id: z.uuidv7({ message: "El id debe ser un UUIDv7 válido" }),
+});
+
 //Buscar usuario
 export const searchUserSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -128,8 +142,4 @@ export const searchUserSchema = z.object({
     .max(200, "No puede exceder 200 caracteres")
     .regex(/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/, "Solo letras y espacios para el nombre")
     .default(""),
-});
-//validar id
-export const userIdSchema = z.object({
-  id: z.uuidv7().trim(),
 });

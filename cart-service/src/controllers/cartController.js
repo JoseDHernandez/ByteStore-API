@@ -65,19 +65,27 @@ class CartController {
     try {
       const parse = createCartSchema.safeParse(req.body);
       if (!parse.success) {
-        // Devuelve detalles del error para depurar
         return res.status(400).json({ error: 'Datos inválidos', details: parse.error.errors });
       }
       const { user_id, products = [] } = parse.data;
       let cart = await dataService.getCartByUserId(user_id);
       if (cart) return res.status(409).json({ error: 'Ya existe un carrito para este usuario' });
-      // Si los productos traen más campos, guárdalos todos
       const productsFull = products.map(p => ({ ...p }));
-      // Generar un id único para el carrito usando uuid v7
-      const { v7: uuidv7 } = require('uuid');
-      const id = uuidv7();
-      cart = await dataService.createCart({ id, user_id, products: productsFull, createdAt: new Date().toISOString() });
-      res.status(201).json(cart);
+      // Importación dinámica de uuidv7 para evitar error de require() en CommonJS
+      let id;
+      try {
+        const uuid = await import('uuid');
+        id = uuid.v7();
+      } catch (e) {
+        // Fallback a uuidv4 si falla la importación dinámica
+        const { v4: uuidv4 } = require('uuid');
+        id = uuidv4();
+      }
+      // Ajuste: dataService.createCart devuelve una tupla [cart, 'ok']
+      const result = await dataService.createCart({ id, user_id, products: productsFull, createdAt: new Date().toISOString() });
+      // Si result es una tupla, accede al índice 0
+      const cartData = Array.isArray(result) ? result[0] : result;
+      res.status(201).json(cartData);
     } catch (error) {
       res.status(500).json({ error: 'Error interno del servidor', message: error.message });
     }
@@ -188,10 +196,15 @@ class CartController {
       const { id, productId } = req.params;
       const cart = await dataService.getCartById(id);
       if (!cart) return res.status(404).json({ error: 'Carrito no encontrado' });
-  if (req.user.role !== 'ADMINISTRADOR' && cart.user_id !== req.user.id) {
+      if (req.user.role !== 'ADMINISTRADOR' && cart.user_id !== req.user.id) {
         return res.status(403).json({ error: 'No tienes permiso para modificar este carrito' });
       }
-      const newProducts = cart.products.filter(p => p.id !== productId);
+      // Verificar si el producto existe en el carrito
+      const exists = cart.products.some(p => p.id == productId);
+      if (!exists) {
+        return res.status(404).json({ error: 'Producto no encontrado en el carrito' });
+      }
+      const newProducts = cart.products.filter(p => p.id != productId);
       const updated = await dataService.updateCart(id, { products: newProducts });
       res.json(updated);
     } catch (error) {

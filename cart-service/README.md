@@ -1,6 +1,10 @@
+
 # ByteStore - Servicio de Carritos
 
+
 Este microservicio gestiona los carritos de compra de ByteStore, permitiendo a cada usuario tener un solo carrito y realizar operaciones CRUD seguras y validadas.
+Ahora utiliza UUID v7 para los identificadores de carritos (con fallback a v4 si es necesario).
+
 
 ## Características principales
 
@@ -11,20 +15,21 @@ Este microservicio gestiona los carritos de compra de ByteStore, permitiendo a c
    - `DELETE /:id` : Eliminar el carrito del usuario (por `user_id`)
    - `GET /cart?user_id=...` : Obtener un carrito por user_id (nuevo formato)
 
+
 - **Validaciones robustas:**
-- Todas las entradas se validan con Zod, devolviendo errores claros y estructurados.
-- El body de productos y user_id ahora exige:
-  - `user_id`: UUID v4/v7
-  - `products[]`: cada producto debe tener los siguientes campos y validaciones:
-    - `id` (int, >=1)
-    - `name` (string, 5-40, solo letras/números/espacios/-)
-    - `model` (string, 5-36, letras/números/-/\)
-    - `price` (número, 100000-20000000)
-    - `discount` (número, 0-90)
-    - `stock` (int, >0)
-    - `image` (url)
-    - `brand` (string, 2-10, solo letras/números/espacios/-)
-    - `quantity` (int, >=1)
+   - Todas las entradas se validan con Zod, devolviendo errores claros y estructurados.
+   - El body de productos y user_id ahora exige:
+      - `user_id`: UUID v7 (preferido) o v4
+      - `products[]`: cada producto debe tener los siguientes campos y validaciones:
+         - `id` (int, >=1)
+         - `name` (string, 5-40, solo letras/números/espacios/-)
+         - `model` (string, 5-36, letras/números/-/\)
+         - `price` (número, 100000-20000000)
+         - `discount` (número, 0-90)
+         - `stock` (int, >0)
+         - `image` (url)
+         - `brand` (string, 2-10, solo letras/números/espacios/-)
+         - `quantity` (int, >=1)
 
 - **Paginación estándar:**
    ```json
@@ -56,7 +61,31 @@ Este microservicio gestiona los carritos de compra de ByteStore, permitiendo a c
     docker-compose up --build
     ```
 
+
 ## Endpoints principales
+### Endpoints legacy adicionales
+
+- **POST /legacy/:id/products** : Agregar producto al carrito
+- **PUT /legacy/:id/products/:productId** : Actualizar cantidad de producto
+- **DELETE /legacy/:id/products/:productId** : Eliminar producto del carrito
+- **DELETE /legacy/:id/clear** : Vaciar carrito
+
+Ejemplo de error mejorado al eliminar un producto inexistente:
+```json
+{
+   "error": "Producto no encontrado en el carrito"
+}
+```
+## Ejemplo de db.json vacío recomendado
+
+Para evitar errores por datos por defecto, se recomienda iniciar con:
+```json
+{
+   "carts": []
+}
+```
+
+Si tienes problemas con datos antiguos, simplemente limpia el archivo `src/data/db.json` y reinicia el servicio.
 
 > Todas las rutas requieren JWT válido en el header `Authorization: Bearer <token>`
 
@@ -187,6 +216,9 @@ Las entradas se validan con Zod. Si hay error, la respuesta incluye detalles en 
    docker-compose up --build
    ```
 3. El servicio estará disponible en `http://localhost:5000` y la base de datos MongoDB en el puerto 27017.
+
+---
+
 
 ---
 

@@ -18,7 +18,7 @@ export async function authMiddleware(
   //Obtener token
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    return res.status(401).json({ message: "Token requerido" });
+    return res.status(401).json({ message: "Token required" });
   }
   //Decodificar token
   const decoded: JWTData | null = verifyToken(authHeader ?? "");

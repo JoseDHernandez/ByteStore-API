@@ -15,6 +15,15 @@ app.use(express.json());
 // Rutas
 app.use(userRoutes);
 app.use(accountRoutes);
+//health
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    uptime: process.uptime(),
+    timestamp: Date.now(),
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`User service running on port ${PORT}`);
 });

@@ -5,7 +5,7 @@ const morgan = require("morgan");
 
 const express = require("express");
 const config = require("./config/config");
-const cartRoutes = require("./routes/cartRoutes");
+const { router: cartRoutes, legacyRouter } = require("./routes/cartRoutes");
 const jwt = require("jsonwebtoken");
 
 const app = express();
@@ -85,7 +85,12 @@ app.use((req, res, next) => {
 });
 
 // Rutas
+
+// Rutas principales
 app.use("/", cartRoutes);
+
+// Rutas legacy bajo prefijo /legacy
+app.use("/legacy", legacyRouter);
 
 // Ruta de salud
 app.get("/health", (req, res) => {
