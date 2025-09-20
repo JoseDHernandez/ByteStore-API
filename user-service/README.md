@@ -14,6 +14,26 @@ Este servicio permite **registrar, autenticar, actualizar y eliminar usuarios**,
 
 ---
 
+## Índice
+
+- [Variables de entorno](#variables-de-entorno)
+- [Peticiones de la API](#peticiones-de-la-api)
+  - [Autenticación](#autenticación)
+    - [Registro de usuario - Sign up](#registro-de-usuario---sign-up)
+    - [Inicio de sesión - Sign in](#inicio-de-sesión---sign-in)
+  - [Obtener usuario](#obtener-usuario)
+  - [Obtener usuarios (solo administradores)](#obtener-usuarios-solo-administradores)
+  - [Obtener todos los usuarios](#obtener-todos-los-usuarios)
+  - [Obtener usuarios con paginación y búsqueda](#obtener-usuarios-con-paginación-y-búsqueda)
+  - [Actualizar usuario](#actualizar-usuario)
+  - [Cambiar contraseña](#cambiar-contraseña)
+  - [Cambiar rol (solo administradores)](#cambiar-rol-solo-administradores)
+  - [Eliminar usuario](#eliminar-usuario)
+- [Códigos de error](#códigos-de-error)
+- [Licencia](#licencia)
+
+---
+
 ## Variables de entorno
 
 | Variable     | Descripción                              | Valor por defecto                                               |
@@ -22,7 +42,7 @@ Este servicio permite **registrar, autenticar, actualizar y eliminar usuarios**,
 
 ---
 
-## Respuestas de la API
+## Peticiones de la API
 
 Todas las respuestas exitosas (`200`, `201`) tienen la siguiente estructura:
 
@@ -50,94 +70,6 @@ En caso de error retornan en el json un campo `message` y si el estado es 500 un
 
 ---
 
-## Obtener usuario
-
-**GET** `/users/:id`
-
-Retorna los datos del usuario por su ID.
-
-**Respuesta**
-
-```json
-{
-  "data": {
-    "id": "01991c0e-16f0-707f-9f6f-3614666caead",
-    "name": "José David Hernández",
-    "email": "jose.hernandez@test.com",
-    "physical_address": "Calle 12 #67-56",
-    "role": "ADMINISTRADOR"
-  }
-}
-```
-
-## Obtener usuarios (solo Administradores)
-
-### Todos los usuarios
-
-**GET** `/users/all`
-
-Retorna todos los usuarios disponibles en la base de datos.
-
-**Respuesta**
-
-```json
-{
-  "total": 2,
-  "data": [
-    {
-      "id": "01991c0e-16f0-707f-9f6f-3614666caead",
-      "name": "José David Hernández",
-      "email": "jose.hernandez@test.com",
-      "physical_address": "Calle 12 #67-56",
-      "role": "ADMINISTRADOR"
-    },
-    {
-      "id": "01991c0e-16f0-707f-9f6f-3614666cabcd",
-      "name": "María Fernanda López",
-      "email": "maria.lopez@test.com",
-      "physical_address": "Carrera 45 #23-12",
-      "role": "CLIENTE"
-    }
-  ]
-}
-```
-
-### Obtener usuarios con paginación y búsqueda
-
-**GET** `/users/?page=1&limit=10&search=nombre`
-
-Permite obtener usuarios con paginación y filtros de búsqueda.
-
-**Parámetros:**
-| Parámetro |Tipo | Requerido | Descripción |
-| --------- | ----------------------------------- | ------- | ----------------- |
-| `page` | number | Si (default: 1) | Número de página (debe ser positivo) |
-| `limit` | number | Si (default: 20) | Cantidad de usuarios por página (máximo 100) |
-| `search` | string | No | Término de búsqueda (nombre o email) |
-
-**Respuesta**
-
-```json
-{
-  "total": 5,
-  "pages": 5,
-  "first": 1,
-  "next": 2,
-  "prev": null,
-  "data": [
-    {
-      "id": "01991c0e-16f0-707f-9f6f-3614666caead",
-      "name": "José David Hernández",
-      "email": "jose.hernandez@test.com",
-      "physical_address": "Calle 12 #67-56",
-      "role": "ADMINISTRADOR"
-    }
-  ]
-}
-```
-
----
-
 ## Autenticación
 
 Las rutas protegidas requieren el header:
@@ -147,10 +79,6 @@ Authorization: <token>
 ```
 
 El token se obtiene en `POST /users/sign-in`.
-
----
-
-## Endpoints
 
 ### Registro de usuario - Sign up
 
@@ -218,6 +146,94 @@ El token se obtiene en `POST /users/sign-in`.
 | ----------------------- | --------------- | ------------- |
 | jose.hernandez@test.com | Contrasea34^5G  | Administrador |
 | maria.lopez@test.com    | M4ria!Lopez2024 | Cliente       |
+
+---
+
+## Obtener usuario
+
+**GET** `/users/:id`
+
+Retorna los datos del usuario por su ID.
+
+**Respuesta**
+
+```json
+{
+  "data": {
+    "id": "01991c0e-16f0-707f-9f6f-3614666caead",
+    "name": "José David Hernández",
+    "email": "jose.hernandez@test.com",
+    "physical_address": "Calle 12 #67-56",
+    "role": "ADMINISTRADOR"
+  }
+}
+```
+
+## Obtener usuarios (solo administradores)
+
+### Obtener todos los usuarios
+
+**GET** `/users/all`
+
+Retorna todos los usuarios disponibles en la base de datos.
+
+**Respuesta**
+
+```json
+{
+  "total": 2,
+  "data": [
+    {
+      "id": "01991c0e-16f0-707f-9f6f-3614666caead",
+      "name": "José David Hernández",
+      "email": "jose.hernandez@test.com",
+      "physical_address": "Calle 12 #67-56",
+      "role": "ADMINISTRADOR"
+    },
+    {
+      "id": "01991c0e-16f0-707f-9f6f-3614666cabcd",
+      "name": "María Fernanda López",
+      "email": "maria.lopez@test.com",
+      "physical_address": "Carrera 45 #23-12",
+      "role": "CLIENTE"
+    }
+  ]
+}
+```
+
+### Obtener usuarios con paginación y búsqueda
+
+**GET** `/users/?page=1&limit=10&search=nombre`
+
+Permite obtener usuarios con paginación y filtros de búsqueda.
+
+**Parámetros:**
+| Parámetro |Tipo | Requerido | Descripción |
+| --------- | ----------------------------------- | ------- | ----------------- |
+| `page` | number | Si (default: 1) | Número de página (debe ser positivo) |
+| `limit` | number | Si (default: 20) | Cantidad de usuarios por página (máximo 100) |
+| `search` | string | No | Término de búsqueda (nombre o email) |
+
+**Respuesta**
+
+```json
+{
+  "total": 5,
+  "pages": 5,
+  "first": 1,
+  "next": 2,
+  "prev": null,
+  "data": [
+    {
+      "id": "01991c0e-16f0-707f-9f6f-3614666caead",
+      "name": "José David Hernández",
+      "email": "jose.hernandez@test.com",
+      "physical_address": "Calle 12 #67-56",
+      "role": "ADMINISTRADOR"
+    }
+  ]
+}
+```
 
 ---
 
@@ -332,3 +348,9 @@ Una contraseña debe tener de 8 a 20 caracteres, al menos una letra mayúscula, 
 | 403    | Prohibido (sin permisos)               |
 | 404    | Usuario no encontrado                  |
 | 500    | Error interno del servidor             |
+
+---
+
+## Licencia
+
+[User-service](https://github.com/JoseDHernandez/ByteStore-API/tree/main/user-service) &copy; 2025 por [José Hernández](https://josedhernandez.com) bajo la licencia [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)

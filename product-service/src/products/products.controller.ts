@@ -4,12 +4,14 @@ import {
   Post,
   Get,
   Put,
+  Patch,
   Delete,
   Param,
   Query,
   ParseIntPipe,
   DefaultValuePipe,
   Header,
+  BadRequestException,
 } from '@nestjs/common';
 import { CreateProductDTO } from './dto/create-product.dto';
 import { ProductsService } from './products.service';
@@ -61,7 +63,8 @@ export class ProductsController {
     if (per_page || page || search || sort || order) {
       //Valores por defecto
       const pageNum = page && page > 0 ? page : 1; // numero de pagina
-      const perPageNum = per_page && per_page > 0 ? per_page : 15; //cantidad por pagina
+      const perPageNum =
+        per_page && per_page > 0 && per_page <= 100 ? per_page : 15; //cantidad por pagina
       const queryTerms = search
         ? decodeURIComponent(search)
             .split(',')
@@ -101,5 +104,23 @@ export class ProductsController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<ResponseProductDTO> {
     return this.productsService.getProductById(id);
+  }
+
+  //Actualizar calificación
+  @Patch(':id')
+  updateQualification(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() qualification: number,
+  ): Promise<ResponseProductDTO> {
+    if (
+      isNaN(qualification) ||
+      isFinite(qualification) ||
+      qualification < 0 ||
+      qualification > 5
+    )
+      throw new BadRequestException(
+        `El valor de qualification es invalido (${qualification})`,
+      );
+    return this.productsService.updateQualification(id, qualification);
   }
 }

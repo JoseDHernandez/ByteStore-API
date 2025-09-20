@@ -38,9 +38,9 @@ import { AuthModule } from './auth/auth.module';
     ProductsModule, // El módulo de productos va a lo ultimo,para evitar conflictos /:id con /brands/, etc.
     //Ruta estática para imágenes
     ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'public', 'images'),
-      serveRoot: '/images',
-      serveStaticOptions: { maxAge: '86400', immutable: true },
+      rootPath: join(process.cwd(), 'public', 'images'), //ruta de la carpeta /public/images
+      serveRoot: '/images', // ruta /images
+      serveStaticOptions: { maxAge: '86400', immutable: true }, //cache
     }),
   ],
   controllers: [AppController],

@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsString,
   IsOptional,
@@ -9,6 +10,7 @@ import {
   IsUrl,
   Matches,
   IsInt,
+  IsNotEmpty,
 } from 'class-validator';
 export class UpdateProductDTO {
   // Nombre
@@ -89,6 +91,22 @@ export class UpdateProductDTO {
   @Min(120, { message: 'El almacenamiento mínimo es de 120 GB' })
   @Max(10000, { message: 'El almacenamiento máximo es de 10000 GB' })
   disk_capacity?: number;
+
+  //Calificación
+  @IsOptional()
+  @IsNotEmpty()
+  //transformar
+  @Transform(({ value }) =>
+    value !== undefined ? parseFloat(value) : undefined,
+  )
+  //validar que si es un número
+  @IsNumber(
+    { allowNaN: false, allowInfinity: false },
+    { message: 'La calificación debe ser un número' },
+  )
+  @Min(0, { message: 'La calificación debe ser al menos 0' })
+  @Max(5, { message: 'La calificación no debe ser mayor a 5' })
+  qualification?: number; //0.0 a 5.0
 
   //id procesador
   @IsInt()

@@ -16,15 +16,9 @@ import { CreateBrandDTO } from './dto/create-brand.dto';
 @Controller('brands')
 export class BrandsController {
   constructor(private brandsService: BrandsService) {}
-  //obtener marcas
-  @Public()
-  @Get()
-  getBrands(): Promise<ResponseBrandDTO[]> {
-    return this.brandsService.getBrands();
-  }
   //id
   @Public()
-  @Get('id')
+  @Get(':id')
   async getBrand(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<ResponseBrandDTO> {
@@ -33,6 +27,12 @@ export class BrandsController {
       throw new NotFoundException(`No se encontró la marca con el id: ${id}`);
     }
     return res;
+  }
+  //obtener marcas
+  @Public()
+  @Get()
+  getBrands(): Promise<ResponseBrandDTO[]> {
+    return this.brandsService.getBrands();
   }
   //Actualizar marca
   @Patch(':id')

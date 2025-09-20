@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  PayloadTooLargeException,
+  UnsupportedMediaTypeException,
+} from '@nestjs/common';
 import { ResponseImageDTO } from './dto/response-image.dto';
 import { join } from 'path';
 import { promises as fs } from 'fs';
@@ -11,15 +16,15 @@ export class ImagesService {
     //tamaño (30kb max)
     const maxSize = 30 * 1024;
     if (file.size > maxSize)
-      throw new BadRequestException('Archivo superior a 30kb');
+      throw new PayloadTooLargeException('Archivo superior a 30kb');
     //validar tipo
     if (file.mimetype !== 'image/webp')
-      throw new BadRequestException(
+      throw new UnsupportedMediaTypeException(
         'Formato invalido, solo se permite el formato webp',
       );
     return {
       message: 'Imagen subida correctamente',
-      filepath: `${process.env.API_URL || 'http://localhost:3000'}/products/images/${file.filename}`,
+      filepath: `${process.env.API_URL || 'http://localhost:3000/products'}/images/${file.filename}`,
     };
   }
   //eliminar imagen
@@ -44,10 +49,10 @@ export class ImagesService {
       //tamaño (30kb max)
       const maxSize = 30 * 1024;
       if (file.size > maxSize)
-        throw new BadRequestException('Archivo superior a 30kb');
+        throw new PayloadTooLargeException('Archivo superior a 30kb');
       //validar tipo
       if (file.mimetype !== 'image/webp')
-        throw new BadRequestException(
+        throw new UnsupportedMediaTypeException(
           'Formato invalido, solo se permite el formato webp',
         );
       const filePath = join(process.cwd(), 'public', 'images', filename);
@@ -56,7 +61,7 @@ export class ImagesService {
       await fs.writeFile(filePath, file.buffer);
       return {
         message: `Imagen reemplazada correctamente`,
-        filepath: `${process.env.API_URL || 'http://localhost:3000'}/products/images/${name}`,
+        filepath: `${process.env.API_URL || 'http://localhost:3000/products'}/images/${name}`,
       };
     } catch (error) {
       throw new BadRequestException(

@@ -36,7 +36,7 @@ export class ProductsService {
     const { id: _dispId, ...display } = product.display;
     return {
       ...product,
-      image: `${process.env.API_URL || 'http://localhost:3000'}/products/images/${product.image}`,
+      image: `${process.env.API_URL || 'http://localhost:3000/products'}/images/${product.image}`,
       brand: product.brand.name.toUpperCase(),
       processor,
       system,
@@ -253,5 +253,21 @@ export class ProductsService {
         name: this.capitalize(d.name),
       })),
     };
+  }
+
+  // actualizar calificación
+  async updateQualification(
+    id: number,
+    qualification: number,
+  ): Promise<ResponseProductDTO> {
+    const update = await this.productRepository.update(
+      { id },
+      { qualification },
+    );
+    if (update.affected === 1) return this.getProductById(id);
+
+    throw new NotFoundException(
+      `No se pudo actualizar la calificación del producto con el id:${id}`,
+    );
   }
 }
