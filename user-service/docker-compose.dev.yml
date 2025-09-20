@@ -1,0 +1,43 @@
+services:
+  user-service:
+    build:
+      context: .
+      dockerfile: dockerfile.dev
+    container_name: user_service_dev
+    restart: always
+    ports:
+      - "3002:3002"
+    environment:
+      DATABASE_HOST: user-db
+      DATABASE_PORT: 3306
+      DATABASE_USER: root
+      DATABASE_PASSWORD: Dp%mdSM^7MDr3qSQ6Cas
+      DATABASE_NAME: users
+    volumes:
+      - ./src:/usr/src/app/src
+      - /usr/src/app/node_modules
+    depends_on:
+      - user-db
+    networks:
+      - app_network
+
+  user-db:
+    image: mysql
+    container_name: mysql_user
+    restart: always
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: Dp%mdSM^7MDr3qSQ6Cas
+      MYSQL_DATABASE: users
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    networks:
+      - app_network
+
+volumes:
+  user_data:
+
+networks:
+  app_network:
+    external: true
