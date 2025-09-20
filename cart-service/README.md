@@ -26,9 +26,11 @@ Ahora utiliza UUID v7 para los identificadores de carritos (con fallback a v4 si
 
    ## Endpoints
 
+
    ### 1. Crear carrito
 
-   - **POST** `/legacy/`
+   - **POST** `/`
+   - **Requiere autenticación:** Sí (Bearer Token en `Authorization`)
    - **Body:**
       ```json
       {
@@ -53,7 +55,7 @@ Ahora utiliza UUID v7 para los identificadores de carritos (con fallback a v4 si
       {
          "id": "uuidv7",
          "user_id": "string",
-         "products": [ ... ],
+         "products": [],
          "createdAt": "fecha",
          "updatedAt": "fecha"
       }
@@ -64,16 +66,18 @@ Ahora utiliza UUID v7 para los identificadores de carritos (con fallback a v4 si
 
    ---
 
+
    ### 2. Obtener todos los carritos
 
-   - **GET** `/legacy/`
+   - **GET** `/`
+   - **Requiere autenticación:** Sí (Bearer Token en `Authorization`)
    - **Respuesta exitosa:**
       ```json
       [
          {
             "id": "uuidv7",
             "user_id": "string",
-            "products": [ ... ],
+            "products": [],
             "createdAt": "fecha",
             "updatedAt": "fecha"
          }
@@ -82,34 +86,39 @@ Ahora utiliza UUID v7 para los identificadores de carritos (con fallback a v4 si
 
    ---
 
+
    ### 3. Obtener carrito por ID
 
-   - **GET** `/legacy/{id}`
+   - **GET** `/:id`
+   - **Requiere autenticación:** Sí (Bearer Token en `Authorization`)
    - **Respuesta exitosa:**
       ```json
       {
          "id": "uuidv7",
          "user_id": "string",
-         "products": [ ... ],
+         "products": [],
          "createdAt": "fecha",
          "updatedAt": "fecha"
       }
       ```
    - **Errores:**
       - 404: Carrito no encontrado
+      - 401: Token inválido o ausente
 
    ---
 
+
    ### 4. Obtener carrito por userId
 
-   - **GET** `/legacy/user/{userId}`
+   - **GET** `/cart?user_id={userId}`
+   - **Requiere autenticación:** Sí (Bearer Token en `Authorization`)
    - **Respuesta exitosa:**
       ```json
       [
          {
             "id": "uuidv7",
             "user_id": "string",
-            "products": [ ... ],
+            "products": [],
             "createdAt": "fecha",
             "updatedAt": "fecha"
          }
@@ -117,12 +126,15 @@ Ahora utiliza UUID v7 para los identificadores de carritos (con fallback a v4 si
       ```
    - **Errores:**
       - 404: Carrito no encontrado
+      - 401: Token inválido o ausente
 
    ---
 
+
    ### 5. Agregar producto a carrito
 
-   - **POST** `/legacy/{id}/products`
+   - **POST** `/:id/products`
+   - **Requiere autenticación:** Sí (Bearer Token en `Authorization`)
    - **Body:**
       ```json
       {
@@ -142,17 +154,21 @@ Ahora utiliza UUID v7 para los identificadores de carritos (con fallback a v4 si
       {
          "id": "uuidv7",
          "user_id": "string",
-         "products": [ ... ]
+         "products": []
       }
       ```
    - **Errores:**
       - 404: Carrito no encontrado
+      - 401: Token inválido o ausente
 
    ---
 
+
+
    ### 6. Actualizar cantidad de producto en carrito
 
-   - **PUT** `/legacy/{id}/products/{productId}`
+   - **PUT** `/:id/products/:productId`
+   - **Requiere autenticación:** Sí (Bearer Token en `Authorization`)
    - **Body:**
       ```json
       {
@@ -164,33 +180,41 @@ Ahora utiliza UUID v7 para los identificadores de carritos (con fallback a v4 si
       {
          "id": "uuidv7",
          "user_id": "string",
-         "products": [ ... ]
+         "products": []
       }
       ```
    - **Errores:**
       - 404: Producto no encontrado en el carrito
+      - 401: Token inválido o ausente
 
    ---
 
+
+
    ### 7. Eliminar producto de carrito
 
-   - **DELETE** `/legacy/{id}/products/{productId}`
+   - **DELETE** `/:id/products/:productId`
+   - **Requiere autenticación:** Sí (Bearer Token en `Authorization`)
    - **Respuesta exitosa:**
       ```json
       {
          "id": "uuidv7",
          "user_id": "string",
-         "products": [ ... ]
+         "products": []
       }
       ```
    - **Errores:**
       - 404: Producto no encontrado en el carrito
+      - 401: Token inválido o ausente
 
    ---
 
+
+
    ### 8. Eliminar carrito
 
-   - **DELETE** `/legacy/{id}`
+   - **DELETE** `/:id`
+   - **Requiere autenticación:** Sí (Bearer Token en `Authorization`)
    - **Respuesta exitosa:**
       ```json
       {
@@ -199,6 +223,45 @@ Ahora utiliza UUID v7 para los identificadores de carritos (con fallback a v4 si
       ```
    - **Errores:**
       - 404: Carrito no encontrado
+      - 401: Token inválido o ausente
+
+   ### 9. Limpiar carrito (eliminar todos los productos)
+
+   - **DELETE** `/:id/clear`
+   - **Requiere autenticación:** Sí (Bearer Token en `Authorization`)
+   - **Respuesta exitosa:**
+      ```json
+      {
+         "id": "uuidv7",
+         "user_id": "string",
+         "products": []
+      }
+      ```
+   - **Errores:**
+      - 404: Carrito no encontrado
+      - 401: Token inválido o ausente
+
+   ### 10. Información del servicio
+
+   - **GET** `/info`
+   - **Respuesta exitosa:**
+      ```json
+      {
+         "service": "cart-service",
+         "status": "ok"
+      }
+      ```
+
+   ### 11. Healthcheck
+
+   - **GET** `/health`
+   - **Respuesta exitosa:**
+      ```json
+      {
+         "status": "healthy",
+         "timestamp": "2025-09-20T00:00:00.000Z"
+      }
+      ```
 
    ---
 
