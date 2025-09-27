@@ -1,3 +1,22 @@
 {
-  "carts": []
+  "carts": [
+    {
+      "id": "019988c1-34cb-762d-a466-9a1ec416fc83",
+      "user_id": "01989493-0def-7f41-ab40-20b04679fbd4",
+      "products": [
+        {
+          "id": 1,
+          "name": "HP Intel Core I3 - 8GB",
+          "model": "15-fd0026la",
+          "price": 3299000,
+          "discount": 54,
+          "stock": 20,
+          "image": "http://localhost:3000/products/images/198122843657-001-750Wx750H.webp",
+          "brand": "HP",
+          "quantity": 1
+        }
+      ],
+      "createdAt": "2025-09-27T01:19:47.404Z"
+    }
+  ]
 }

@@ -70,6 +70,56 @@ En caso de error retornan en el json un campo `message` y si el estado es 500 un
 
 ---
 
+## Información y estado del servicio
+
+### Información básica del servicio
+
+**GET** `/info`
+Retorna información básica del servicio, como su nombre, versión y descripción.
+
+**Respuesta:**
+
+```json
+{
+  "name": "ByteStore-API user-service",
+  "description": "Microservicio encargado de la gestión de usuarios en ByteStore (registro, autenticación, actualización y eliminación).",
+  "version": "1.0.0",
+  "license": "CC BY-NC-SA 4.0",
+  "author": "José David Hernández Hortúa",
+  "repository": "https://github.com/JoseDHernandez/ByteStore-API/tree/main/user-service",
+  "docs": "https://github.com/JoseDHernandez/ByteStore-API/blob/main/user-service/README.md",
+  "endpoints": {
+    "register": "POST /sign-up",
+    "login": "POST /sign-in",
+    "getUser": "GET /:id",
+    "updateUser": "PATCH /:id",
+    "deleteUser": "DELETE /:id",
+    "listUsers": "GET /all"
+  },
+  "status": "running",
+  "uptime": "169s",
+  "timestamp": "2025-09-27T01:03:13.104Z"
+}
+```
+
+### Estado del servicio
+
+**GET** `/health`
+
+Retorna el estado de salud del servicio.
+
+**Respuesta:**
+
+```json
+{
+  "status": "ok",
+  "uptime": "169s",
+  "timestamp": "2025-09-27T01:03:13.104Z"
+}
+```
+
+---
+
 ## Autenticación
 
 Las rutas protegidas requieren el header:
