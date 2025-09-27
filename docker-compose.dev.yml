@@ -99,7 +99,6 @@ services:
       - app_network
 
   # ==========================
-<<<<<<< HEAD
   # Cart Service (Express + MongoDB)
   # ==========================
   cart-service:
@@ -109,9 +108,9 @@ services:
     container_name: cart_service
     restart: always
     ports:
-      - "3006:3003"  # Cambiado de 3004 a 3006 para evitar conflicto con order-service
+      - "3003:3003"
     environment:
-      PORT: 3003   # Puerto donde corre Express
+      PORT: 3003 # Puerto donde corre Express
       MONGO_URI: mongodb://cart-db:27017/cartdb
     volumes:
       - ./cart-service/src:/usr/src/app/src
@@ -127,11 +126,12 @@ services:
     restart: always
     ports:
       - "3309:27017"
-    environment:
-      MONGO_INITDB_DATABASE: cartdb
     volumes:
-      - cart_data:/data/db
-=======
+      - ./cart-service/mongo_data:/data/db
+    networks:
+      - app_network
+
+  # ==========================
   # Orders Service (Express)
   # ==========================
   orders-service:
@@ -166,27 +166,17 @@ services:
     container_name: mysql_orders
     restart: always
     ports:
-      - "3309:3306"
+      - "3310:3306"
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: orders_db
     volumes:
       - orders_data:/var/lib/mysql
       - ./orders-service/init:/docker-entrypoint-initdb.d
->>>>>>> origin/main
     networks:
       - app_network
 
   # ==========================
-<<<<<<< HEAD
-  # Review Service (Express + MySQL)
-  # ==========================
-  review-service:
-    build:
-      context: ./review-service
-      dockerfile: dockerfile.dev
-    container_name: review_service
-=======
   # Reviews Service (Express)
   # ==========================
   reviews-service:
@@ -194,38 +184,16 @@ services:
       context: ./reviews-service
       dockerfile: dockerfile.dev
     container_name: reviews_service
->>>>>>> origin/main
     restart: always
     ports:
-      - "3003:3003"
+      - "3005:3005"
     environment:
-<<<<<<< HEAD
-      PORT: 3003
-      DB_HOST: review-db
-      DB_PORT: 3306
-      DB_USER: root
-      DB_PASSWORD: RvW#8mK$9nL@2pQ!
-      DB_NAME: bytestore_reviews
-      JWT_SECRET: "@y*&0a%K%7P0t@uQ^38HN$$y4Z^PK#0zE7dem700Bbf&pC6HF$$aU^ARkE@u$$nn"
-      NODE_ENV: development
-    volumes:
-      - ./review-service/src:/usr/src/app/src
-      - /usr/src/app/node_modules
-    depends_on:
-      - review-db
-    networks:
-      - app_network
-
-  review-db:
-    image: mysql:8
-    container_name: mysql_review
-=======
       DB_HOST: mysql_reviews
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: password
       DB_NAME: reviews_db
-      PORT: 3003
+      PORT: 3005
       NODE_ENV: development
       JWT_SECRET: reviews_jwt_secret_muy_seguro_2024
       JWT_EXPIRES_IN: 24h
@@ -241,67 +209,15 @@ services:
   reviews-db:
     image: mysql:8
     container_name: mysql_reviews
->>>>>>> origin/main
-    restart: always
-    ports:
-      - "3310:3306"
-    environment:
-<<<<<<< HEAD
-      MYSQL_ROOT_PASSWORD: RvW#8mK$9nL@2pQ!
-      MYSQL_DATABASE: bytestore_reviews
-    volumes:
-      - review_data:/var/lib/mysql
-      - ./review-service/init:/docker-entrypoint-initdb.d
-    networks:
-      - app_network
-
-  # ==========================
-  # Order Service (Express + MySQL)
-  # ==========================
-  order-service:
-    build:
-      context: ./order-service
-      dockerfile: dockerfile.dev
-    container_name: order_service
-    restart: always
-    ports:
-      - "3004:3004"  # Cambiado de 3005 a 3004 para consistencia
-    environment:
-      PORT: 3004
-      DB_HOST: order-db
-      DB_PORT: 3306
-      DB_USER: root
-      DB_PASSWORD: OrD#5nK$7mL@9pQ!
-      DB_NAME: bytestore_orders
-      JWT_SECRET: "@y*&0a%K%7P0t@uQ^38HN$$y4Z^PK#0zE7dem700Bbf&pC6HF$$aU^ARkE@u$$nn"
-      NODE_ENV: development
-    volumes:
-      - ./order-service/src:/usr/src/app/src
-      - /usr/src/app/node_modules
-    depends_on:
-      - order-db
-    networks:
-      - app_network
-
-  order-db:
-    image: mysql:8
-    container_name: mysql_order
     restart: always
     ports:
       - "3311:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: OrD#5nK$7mL@9pQ!
-      MYSQL_DATABASE: bytestore_orders
-    volumes:
-      - order_data:/var/lib/mysql
-      - ./order-service/init:/docker-entrypoint-initdb.d
-=======
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: reviews_db
     volumes:
       - reviews_data:/var/lib/mysql
       - ./reviews-service/init:/docker-entrypoint-initdb.d
->>>>>>> origin/main
     networks:
       - app_network
 
@@ -311,14 +227,9 @@ services:
 volumes:
   product_data:
   user_data:
-<<<<<<< HEAD
   cart_data:
-  review_data:
-  order_data:
-=======
   orders_data:
   reviews_data:
->>>>>>> origin/main
 # ==========================
 # Networks
 # ==========================
