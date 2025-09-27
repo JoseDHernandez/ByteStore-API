@@ -1,0 +1,39 @@
+{
+  "name": "order-service",
+  "version": "1.0.0",
+  "description": "Servicio de historial de pedidos para ByteStore",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "nodemon --watch src --ext ts --exec \"tsx src/index.ts\"",
+    "build": "tsc && node -e \"const fs = require('fs'); const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')); fs.writeFileSync('dist/package.json', JSON.stringify({type: 'module'}, null, 2));\"",
+    "start": "node dist/index.js"
+  },
+  "keywords": ["orders", "history", "microservice", "api"],
+  "author": "José Hernández, Daniel Leiton & Anderson Lozada",
+  "license": "CC BY-NC-SA 4.0",
+  "type": "module",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "mysql2": "^3.14.3",
+    "uuid": "^11.1.0",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@tsconfig/node-lts": "^22.0.2",
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^24.3.0",
+    "@types/uuid": "^10.0.0",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.7.1",
+    "typescript": "^5.9.2"
+  }
+}

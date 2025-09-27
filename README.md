@@ -40,11 +40,27 @@ Las siguientes tecnologías y herramientas se utilizan en los servicios de la AP
 
 ### Servicio de pedidos (order-service)
 
-- Pendiente
+- Node.js
+- TypeScript
+- Express
+- MySQL
+- JWT (jsonwebtoken para verificación de tokens)
+- Zod (validación de esquemas)
+- bcrypt (hashing de contraseñas)
+- uuid (identificadores únicos)
+- Morgan (logging de requests)
 
 ### Servicio de calificaciones (review-service)
 
-- Pendiente
+- Node.js
+- TypeScript
+- Express
+- MySQL
+- JWT (jsonwebtoken para verificación de tokens)
+- Zod (validación de esquemas)
+- bcrypt (hashing de contraseñas)
+- uuid (identificadores únicos)
+- Morgan (logging de requests)
 
 ### Servicio de carrito de compras (cart-service)
 
