@@ -1,0 +1,236 @@
+name: API Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Ejecutar pruebas automáticamente cada día a las 6:00 AM UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Tipo de prueba a ejecutar'
+        required: true
+        default: 'normal'
+        type: choice
+        options:
+        - normal
+        - load
+        - heavy_load
+      environment:
+        description: 'Entorno de pruebas'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+        - development
+        - staging
+        - production
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+    
+    steps:
+    - name: 📥 Checkout código
+      uses: actions/checkout@v4
+    
+    - name: 🟢 Configurar Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: 📦 Instalar dependencias
+      run: npm ci
+    
+    - name: 🔧 Configurar variables de entorno
+      run: |
+        echo "BASE_URL=${{ secrets.API_BASE_URL || 'http://localhost:3000' }}" >> $GITHUB_ENV
+        echo "PRODUCT_BASE_URL=${{ secrets.PRODUCT_API_URL || 'http://localhost:3001' }}" >> $GITHUB_ENV
+        echo "ORDERS_BASE_URL=${{ secrets.ORDERS_API_URL || 'http://localhost:3002' }}" >> $GITHUB_ENV
+        echo "REVIEWS_BASE_URL=${{ secrets.REVIEWS_API_URL || 'http://localhost:3003' }}" >> $GITHUB_ENV
+        echo "GATEWAY_URL=${{ secrets.GATEWAY_URL || 'http://localhost:8080' }}" >> $GITHUB_ENV
+    
+    - name: 🧪 Ejecutar pruebas normales
+      if: ${{ github.event.inputs.test_type == 'normal' || github.event.inputs.test_type == '' }}
+      run: npm test
+    
+    - name: 🔥 Ejecutar pruebas de carga
+      if: ${{ github.event.inputs.test_type == 'load' }}
+      run: npm run test:load
+    
+    - name: 💥 Ejecutar pruebas de carga pesada
+      if: ${{ github.event.inputs.test_type == 'heavy_load' }}
+      run: npm run test:load:heavy
+    
+    - name: 📊 Subir reportes de pruebas
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-reports-node-${{ matrix.node-version }}
+        path: |
+          test-results/
+          !test-results/*.json
+        retention-days: 30
+    
+    - name: 📈 Publicar resultados de pruebas
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: API Tests Results (Node ${{ matrix.node-version }})
+        path: test-results/api-test-results.xml
+        reporter: java-junit
+        fail-on-error: true
+    
+    - name: 💬 Comentar en PR con resultados
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = 'test-results/custom-report.json';
+          
+          if (fs.existsSync(path)) {
+            const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const { summary } = report;
+            
+            const body = `## 🧪 Resultados de Pruebas API (Node ${{ matrix.node-version }})
+            
+            | Métrica | Valor |
+            |---------|-------|
+            | 📝 Total Requests | ${summary.total_requests} |
+            | ✅ Requests Exitosos | ${summary.successful_requests} |
+            | ❌ Requests Fallidos | ${summary.failed_requests} |
+            | 🧪 Total Tests | ${summary.total_tests} |
+            | ✅ Tests Pasados | ${summary.passed_tests} |
+            | ❌ Tests Fallidos | ${summary.failed_tests} |
+            | 📈 Tasa de Éxito | ${summary.success_rate}% |
+            | ⏱️ Tiempo de Ejecución | ${summary.execution_time_ms}ms |
+            
+            ${summary.success_rate >= 95 ? '🎉 ¡Excelente! Todas las pruebas pasaron.' : 
+              summary.success_rate >= 80 ? '⚠️ Algunas pruebas fallaron. Revisar los errores.' : 
+              '🚨 Múltiples pruebas fallaron. Acción requerida.'}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+          }
+    
+    - name: 🚨 Notificar fallos por Slack
+      if: failure() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        channel: '#api-alerts'
+        text: |
+          🚨 Las pruebas de API fallaron en ${{ github.ref }}
+          
+          **Commit:** ${{ github.sha }}
+          **Autor:** ${{ github.actor }}
+          **Workflow:** ${{ github.workflow }}
+          
+          [Ver detalles](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: api-tests
+    
+    steps:
+    - name: 📥 Checkout código
+      uses: actions/checkout@v4
+    
+    - name: 🔒 Escaneo de seguridad con Snyk
+      uses: snyk/actions/node@master
+      continue-on-error: true
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+    
+    - name: 🛡️ Análisis de dependencias
+      run: |
+        npm audit --audit-level=moderate
+        npm outdated || true
+
+  performance-monitoring:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: api-tests
+    
+    steps:
+    - name: 📥 Checkout código
+      uses: actions/checkout@v4
+    
+    - name: 🟢 Configurar Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+    
+    - name: 📦 Instalar dependencias
+      run: npm ci
+    
+    - name: 📊 Ejecutar pruebas de rendimiento
+      run: |
+        npm run test:load
+        
+        # Analizar resultados y enviar métricas
+        node -e "
+          const fs = require('fs');
+          const reports = fs.readdirSync('test-results')
+            .filter(f => f.startsWith('load-test-'))
+            .map(f => JSON.parse(fs.readFileSync('test-results/' + f)));
+          
+          const avgResponseTime = reports.reduce((sum, r) => 
+            sum + r.run.timings.completed - r.run.timings.started, 0) / reports.length;
+          
+          console.log('Average Response Time:', avgResponseTime + 'ms');
+          
+          // Aquí se pueden enviar métricas a servicios como DataDog, New Relic, etc.
+        "
+
+  deploy-docs:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: [api-tests, security-scan]
+    
+    steps:
+    - name: 📥 Checkout código
+      uses: actions/checkout@v4
+    
+    - name: 🟢 Configurar Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+    
+    - name: 📦 Instalar dependencias
+      run: npm ci
+    
+    - name: 📚 Generar documentación
+      run: |
+        # Generar documentación de Postman
+        npx newman run ByteStore-API-Tests.postman_collection.json \
+          -e ByteStore-API-Environment.postman_environment.json \
+          --reporters html \
+          --reporter-html-export docs/api-documentation.html
+    
+    - name: 🚀 Desplegar a GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs
+        cname: api-docs.bytestore.com

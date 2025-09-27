@@ -1,0 +1,43 @@
+{
+  "name": "bytestore-api-tests",
+  "version": "1.0.0",
+  "description": "Pruebas automatizadas para ByteStore API usando Postman/Newman",
+  "main": "run-api-tests.js",
+  "scripts": {
+    "test": "node run-api-tests.js",
+    "test:load": "node run-api-tests.js --load",
+    "test:load:heavy": "node run-api-tests.js --load --concurrent=10 --iterations=20",
+    "install:newman": "npm install newman newman-reporter-html newman-reporter-junit",
+    "setup": "npm install && echo 'Configuración completada. Ejecuta npm run test para iniciar las pruebas.'",
+    "report:open": "start test-results/api-test-report.html",
+    "clean": "rmdir /s /q test-results 2>nul || echo 'Directorio limpio'"
+  },
+  "keywords": [
+    "api",
+    "testing",
+    "postman",
+    "newman",
+    "automation",
+    "bytestore"
+  ],
+  "author": "ByteStore Team",
+  "license": "MIT",
+  "dependencies": {
+    "newman": "^6.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bytestore/api-tests.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bytestore/api-tests/issues"
+  },
+  "homepage": "https://github.com/bytestore/api-tests#readme"
+}
