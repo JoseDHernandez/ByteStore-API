@@ -1,112 +1,118 @@
-import express from 'express';
-import morgan from 'morgan';
-import dotenv from 'dotenv';
-import orderRoutes from './routes/order.routes';
-import { connectDB } from './config/database';
+import express from "express";
+import ordersRoutes from "./routes/orders.routes.js";
+import orderStatusRoutes from "./routes/orderStatus.routes.js";
+import dotenv from "dotenv";
+import morgan from "morgan";
+import cors from "cors";
+import { testConnection } from "./db.js";
 
-// Configurar variables de entorno
+// Cargar variables de entorno
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3004;
 
-// Rutas públicas ABSOLUTAMENTE PRIMERO - sin ningún middleware previo
-app.get('/health', (req, res) => {
-  console.log('=== HEALTH CHECK ACCESSED - PUBLIC ROUTE ===');
-  console.log('Request headers:', req.headers);
-  console.log('Request method:', req.method);
-  console.log('Request path:', req.path);
-  res.status(200).json({
-    status: 'OK',
-    message: 'Order Service está funcionando correctamente',
-    timestamp: new Date().toISOString(),
-    port: PORT,
-    service: 'order-service',
-    version: '1.0.0',
-    debug: 'This is a public route - no authentication required'
-  });
-});
-
-app.get('/', (req, res) => {
-  console.log('=== ROOT PATH ACCESSED - PUBLIC ROUTE ===');
-  res.status(200).json({
-    service: 'Order Service',
-    version: '1.0.0',
-    status: 'running',
-    endpoints: ['/health', '/orders'],
-    timestamp: new Date().toISOString(),
-    debug: 'This is a public route - no authentication required'
-  });
-});
-
-// Middleware básico DESPUÉS de las rutas públicas
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-
-// CORS
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
-
-// Logging middleware
-app.use(morgan('combined'));
-
-// Rutas protegidas (con autenticación) - Sin prefijo para compatibilidad con API Gateway
-app.use('/', orderRoutes);
-
-// Middleware de manejo de errores 404
-app.use((req, res, next) => {
-  res.status(404).json({
-    error: 'Endpoint no encontrado',
-    message: `La ruta ${req.method} ${req.path} no existe`
-  });
-});
-
-// Middleware global de manejo de errores
-app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error no manejado:', error);
-  res.status(500).json({
-    error: 'Error interno del servidor',
-    message: 'Ha ocurrido un error inesperado'
-  });
-});
-
-// Función para iniciar el servidor
-const startServer = async () => {
-  try {
-    // Conectar a la base de datos
-    await connectDB();
-    
-    app.listen(PORT, () => {
-      console.log(`🚀 Order Service ejecutándose en puerto ${PORT}`);
-      console.log(`📊 Health check disponible en: http://localhost:${PORT}/health`);
-      console.log(`📦 API disponible en: http://localhost:${PORT}/orders`);
-      console.log('✅ Conectado a la base de datos MySQL');
-    });
-  } catch (error) {
-    console.error('❌ Error al iniciar el servidor:', error);
-    process.exit(1);
-  }
+// Configuración de CORS
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN?.split(",") || ["http://localhost:3000"],
+  credentials: true,
+  optionsSuccessStatus: 200,
 };
 
+// Middleware
+app.use(morgan("dev")); // Logging de requests
+app.use(cors(corsOptions)); // CORS
+app.use(express.json({ limit: "10mb" })); // Parser JSON
+app.use(express.urlencoded({ extended: true })); // Parser URL-encoded
+
+// Rutas principales
+app.use("/orders", ordersRoutes);
+app.use("/orders", orderStatusRoutes);
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    service: "order-service",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+
+// Ruta raíz con información del servicio
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "ByteStore Orders Service API",
+    version: "1.0.0",
+    description: "Microservicio para gestión de órdenes de compra",
+    endpoints: {
+      orders: "/orders",
+      health: "/health",
+    },
+    documentation: "Ver README.md para más información",
+  });
+});
+
+// Middleware de manejo de errores 404
+app.use("*", (req, res) => {
+  res.status(404).json({
+    message: "Endpoint no encontrado",
+    path: req.originalUrl,
+    method: req.method,
+  });
+});
+
+// Middleware de manejo de errores globales
+app.use(
+  (
+    err: any,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    console.error("Error no manejado:", err);
+    res.status(500).json({
+      message: "Error interno del servidor",
+      error:
+        process.env.NODE_ENV === "development" ? err.message : "Error interno",
+    });
+  }
+);
+
+// Función para iniciar el servidor
+async function startServer() {
+  try {
+    // Probar conexión a la base de datos
+    console.log("🔍 Probando conexión a la base de datos...");
+    await testConnection();
+    console.log("✅ Conexión a la base de datos exitosa");
+
+    // Iniciar servidor
+    app.listen(PORT, () => {
+      console.log(`🚀 Orders Service ejecutándose en puerto ${PORT}`);
+      console.log(`📍 URL: http://localhost:${PORT}`);
+      console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+      console.log(`📦 Orders API: http://localhost:${PORT}/orders`);
+      console.log(`🌍 Entorno: ${process.env.NODE_ENV || "development"}`);
+    });
+  } catch (error) {
+    console.error("❌ Error al iniciar el servidor:", error);
+    process.exit(1);
+  }
+}
+
 // Manejo de señales de terminación
-process.on('SIGTERM', () => {
-  console.log('🛑 Recibida señal SIGTERM, cerrando servidor...');
+process.on("SIGTERM", () => {
+  console.log("🛑 Recibida señal SIGTERM, cerrando servidor...");
   process.exit(0);
 });
 
-process.on('SIGINT', () => {
-  console.log('🛑 Recibida señal SIGINT, cerrando servidor...');
+process.on("SIGINT", () => {
+  console.log("🛑 Recibida señal SIGINT, cerrando servidor...");
   process.exit(0);
 });
 
 // Iniciar el servidor
 startServer();
+
+export default app;

@@ -1,150 +1,119 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { JWTPayload } from '../types/order.types';
+import type { Request, Response, NextFunction } from "express";
+import { verifyToken } from "../utils/jwt.js";
+import type { JWTData } from "../types/token.js";
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JWTPayload;
+/**
+ * Middleware para validar token JWT
+ * Verifica que el usuario esté autenticado
+ */
+export async function authMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> {
+  try {
+    // Obtener token del header Authorization
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ 
+        message: "Token de autorización requerido",
+        error: "MISSING_TOKEN" 
+      });
     }
+
+    // Decodificar y verificar token
+    const decoded: JWTData | null = verifyToken(authHeader);
+
+    if (!decoded) {
+      return res.status(401).json({ 
+        message: "Token inválido o expirado",
+        error: "INVALID_TOKEN" 
+      });
+    }
+
+    // Guardar datos del usuario en el request
+    req.auth = decoded;
+    next();
+  } catch (error) {
+    console.error("Error en middleware de autenticación:", error);
+    return res.status(500).json({ 
+      message: "Error interno del servidor",
+      error: "INTERNAL_ERROR" 
+    });
   }
 }
 
 /**
- * Middleware de autenticación JWT
- * Valida el token Bearer en el header Authorization
+ * Middleware para validar si el usuario es administrador
+ * Requiere que authMiddleware se ejecute primero
  */
-export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-  if (!token) {
-    res.status(401).json({
-      error: 'Token de acceso requerido',
-      message: 'No se proporcionó token de autenticación'
-    });
-    return;
-  }
-
+export async function isAdmin(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Promise<Response | void> {
   try {
-    // En producción, usar una clave secreta real desde variables de entorno
-    const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
-    
-    // Para desarrollo/pruebas, usar mock data
-    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
-      req.user = {
-        userId: 'user-123',
-        email: 'test@example.com',
-        role: 'admin',
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + (60 * 60) // 1 hora
-      };
-      next();
-      return;
+    // Validar si existe información de autenticación
+    if (!req.auth) {
+      return res.status(401).json({ 
+        message: "No autorizado - Token requerido",
+        error: "MISSING_AUTH" 
+      });
     }
 
-    // Validación JWT real para producción
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
-    req.user = decoded;
+    // Validar rol de administrador
+    if (req.auth.role !== "ADMINISTRADOR") {
+      return res.status(403).json({ 
+        message: "Acceso denegado - Se requieren permisos de administrador",
+        error: "INSUFFICIENT_PERMISSIONS" 
+      });
+    }
+
     next();
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      res.status(401).json({
-        error: 'Token inválido',
-        message: 'El token proporcionado no es válido'
-      });
-    } else if (error instanceof jwt.TokenExpiredError) {
-      res.status(401).json({
-        error: 'Token expirado',
-        message: 'El token ha expirado, por favor inicia sesión nuevamente'
-      });
-    } else {
-      res.status(500).json({
-        error: 'Error interno del servidor',
-        message: 'Error al procesar la autenticación'
-      });
-    }
+    console.error("Error en middleware de administrador:", error);
+    return res.status(500).json({ 
+      message: "Error interno del servidor",
+      error: "INTERNAL_ERROR" 
+    });
   }
-};
+}
 
 /**
- * Middleware para verificar permisos de administrador
+ * Middleware para validar acceso a recursos
+ * Permite acceso al propietario del recurso o administradores
  */
-export const isAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  if (!req.user) {
-    res.status(401).json({
-      error: 'No autenticado',
-      message: 'Se requiere autenticación'
-    });
-    return;
-  }
-
-  if (req.user.role !== 'admin') {
-    res.status(403).json({
-      error: 'Acceso denegado',
-      message: 'Se requieren permisos de administrador'
-    });
-    return;
-  }
-
-  next();
-};
-
-/**
- * Middleware para verificar que el usuario es propietario del recurso o administrador
- */
-export const isOwnerOrAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  if (!req.user) {
-    res.status(401).json({
-      error: 'No autenticado',
-      message: 'Se requiere autenticación'
-    });
-    return;
-  }
-
-  const userId = req.params.userId || req.body.userId || req.query.userId;
-
-  if (req.user.role === 'admin' || req.user.userId === userId) {
-    next();
-  } else {
-    res.status(403).json({
-      error: 'Acceso denegado',
-      message: 'Solo puedes acceder a tus propios recursos'
-    });
-  }
-};
-
-/**
- * Middleware opcional de autenticación (no falla si no hay token)
- */
-export const optionalAuth = (req: Request, res: Response, next: NextFunction): void => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    next();
-    return;
-  }
-
+export function canAccessResource(
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): Response | void {
   try {
-    const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
-    
-    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
-      req.user = {
-        userId: 'user-123',
-        email: 'test@example.com',
-        role: 'admin',
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + (60 * 60)
-      };
-    } else {
-      const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
-      req.user = decoded;
+    if (!req.auth) {
+      return res.status(401).json({ 
+        message: "No autorizado - Token requerido",
+        error: "MISSING_AUTH" 
+      });
     }
-  } catch (error) {
-    // En autenticación opcional, ignoramos errores de token
-    console.warn('Token inválido en autenticación opcional:', error);
-  }
 
-  next();
-};
+    // Obtener ID del usuario del recurso (desde parámetros o body)
+    const resourceUserId = req.params.userId || req.body.user_id || req.query.user_id;
+    const isOwner = req.auth.id === resourceUserId;
+    const isAdminUser = req.auth.role === "ADMINISTRADOR";
+
+    if (!isOwner && !isAdminUser) {
+      return res.status(403).json({ 
+        message: "Acceso denegado - Solo el propietario o un administrador pueden acceder",
+        error: "ACCESS_DENIED" 
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Error en middleware de acceso a recursos:", error);
+    return res.status(500).json({ 
+      message: "Error interno del servidor",
+      error: "INTERNAL_ERROR" 
+    });
+  }
+}

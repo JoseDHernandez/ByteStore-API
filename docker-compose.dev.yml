@@ -134,9 +134,9 @@ services:
   # ==========================
   # Orders Service (Express)
   # ==========================
-  orders-service:
+  order-service:
     build:
-      context: ./orders-service
+      context: ./order-service
       dockerfile: dockerfile.dev
     container_name: orders_service
     restart: always
@@ -154,7 +154,7 @@ services:
       JWT_EXPIRES_IN: 24h
       CORS_ORIGIN: http://localhost:3000,http://localhost:8080
     volumes:
-      - ./orders-service/src:/usr/src/app/src
+      - ./order-service/src:/usr/src/app/src
       - /usr/src/app/node_modules
     depends_on:
       - orders-db
@@ -172,16 +172,16 @@ services:
       MYSQL_DATABASE: orders_db
     volumes:
       - orders_data:/var/lib/mysql
-      - ./orders-service/init:/docker-entrypoint-initdb.d
+      - ./order-service/init:/docker-entrypoint-initdb.d
     networks:
       - app_network
 
   # ==========================
   # Reviews Service (Express)
   # ==========================
-  reviews-service:
+  review-service:
     build:
-      context: ./reviews-service
+      context: ./review-service
       dockerfile: dockerfile.dev
     container_name: reviews_service
     restart: always
@@ -199,7 +199,7 @@ services:
       JWT_EXPIRES_IN: 24h
       CORS_ORIGIN: http://localhost:3000,http://localhost:8080
     volumes:
-      - ./reviews-service/src:/usr/src/app/src
+      - ./review-service/src:/usr/src/app/src
       - /usr/src/app/node_modules
     depends_on:
       - reviews-db
@@ -217,7 +217,7 @@ services:
       MYSQL_DATABASE: reviews_db
     volumes:
       - reviews_data:/var/lib/mysql
-      - ./reviews-service/init:/docker-entrypoint-initdb.d
+      - ./review-service/init:/docker-entrypoint-initdb.d
     networks:
       - app_network
 

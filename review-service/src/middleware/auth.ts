@@ -1,89 +1,76 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { JWTPayload } from '../types/review.types';
+import type { Request, Response, NextFunction } from 'express';
+import { verifyToken } from '../utils/jwt.js';
+import type { JWTData } from '../types/token.js';
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JWTPayload;
-    }
+// Validar token JWT
+export async function authMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  // Obtener token del header Authorization
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ message: 'Token requerido' });
   }
-}
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  // Decodificar token
+  const decoded: JWTData | null = verifyToken(authHeader);
 
-  if (!token) {
-    return res.status(401).json({ 
-      error: 'Token de acceso requerido',
-      message: 'No se proporcionó token de autenticación' 
-    });
+  if (!decoded) {
+    return res.status(401).json({ message: 'Token inválido o expirado' });
   }
 
   try {
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error('JWT_SECRET no está configurado');
-      return res.status(500).json({ 
-        error: 'Error de configuración del servidor' 
-      });
-    }
+    // Validar existencia del usuario (consulta a la base de datos de usuarios)
+    // Nota: En un entorno real, esto podría ser una llamada a otro microservicio
+    // Por ahora, asumimos que el token es válido si se puede decodificar
 
-    const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
-    req.user = decoded;
+    // Guardar datos del usuario en el request
+    req.auth = decoded;
     next();
   } catch (error) {
-    if (error instanceof jwt.TokenExpiredError) {
-      return res.status(401).json({ 
-        error: 'Token expirado',
-        message: 'El token de autenticación ha expirado' 
-      });
-    } else if (error instanceof jwt.JsonWebTokenError) {
-      return res.status(403).json({ 
-        error: 'Token inválido',
-        message: 'El token de autenticación no es válido' 
-      });
-    } else {
-      return res.status(500).json({ 
-        error: 'Error interno del servidor' 
-      });
-    }
+    return res.status(500).json({ message: 'Error del servidor', error });
   }
-};
+}
 
-export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user) {
-    return res.status(401).json({ 
-      error: 'Usuario no autenticado' 
-    });
+// Validar si el usuario es administrador
+export async function isAdmin(req: Request, res: Response, next: NextFunction) {
+  // Validar si existe validación del token
+  if (!req.auth) {
+    return res.status(401).json({ message: 'No autorizado' });
   }
 
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ 
-      error: 'Acceso denegado',
-      message: 'Se requieren permisos de administrador' 
+  // Validar rol en el token
+  if (req.auth.role !== 'ADMINISTRADOR') {
+    return res.status(403).json({
+      message: 'Acceso denegado. Se requieren permisos de administrador',
     });
   }
 
   next();
-};
+}
 
-export const isOwnerOrAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user) {
-    return res.status(401).json({ 
-      error: 'Usuario no autenticado' 
+// Validar si el usuario puede acceder al recurso (propietario o admin)
+export function canAccessResource(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  if (!req.auth) {
+    return res.status(401).json({ message: 'No autorizado' });
+  }
+
+  const resourceUserId = req.params.userId || req.body.usuario_id;
+  const isOwner = req.auth.id === resourceUserId;
+  const isAdminUser = req.auth.role === 'ADMINISTRADOR';
+
+  if (!isOwner && !isAdminUser) {
+    return res.status(403).json({
+      message:
+        'Acceso denegado. Solo el propietario o un administrador pueden acceder a este recurso',
     });
   }
 
-  const resourceUserId = req.params.userId || req.body.userId;
-  
-  if (req.user.role === 'admin' || req.user.id === resourceUserId) {
-    next();
-  } else {
-    return res.status(403).json({ 
-      error: 'Acceso denegado',
-      message: 'Solo puedes acceder a tus propios recursos' 
-    });
-  }
-};
+  next();
+}
