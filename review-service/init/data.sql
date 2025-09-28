@@ -1,5 +1,5 @@
 -- Configurar charset de la base de datos
-ALTER DATABASE reviews CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish2_ci;
+ALTER DATABASE reviews_db CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish2_ci;
 
 -- Tabla de calificaciones/reseñas
 CREATE TABLE `calificaciones` (

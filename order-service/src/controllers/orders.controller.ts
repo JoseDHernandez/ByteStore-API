@@ -1,18 +1,18 @@
-import type { Request, Response } from 'express';
-import { db } from '../db.js';
-import type { ResultSetHeader, RowDataPacket } from 'mysql2';
+import type { Request, Response } from "express";
+import { db } from "../db.js";
+import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import type {
   Order,
   OrderProduct,
   OrderResponseDTO,
   OrdersPaginatedResponse,
-} from '../types/order.js';
+} from "../types/order.js";
 import {
   createOrderSchema,
   updateOrderSchema,
   orderIdSchema,
   ordersQuerySchema,
-} from '../schemas/order.schema.js';
+} from "../schemas/order.schema.js";
 
 type OrderRow = RowDataPacket & Order;
 type OrderProductRow = RowDataPacket & OrderProduct;
@@ -22,22 +22,25 @@ type OrderProductRow = RowDataPacket & OrderProduct;
  * @param req - Request con datos de la orden
  * @param res - Response con la orden creada
  */
-export async function createOrder(req: Request, res: Response): Promise<Response | void> {
+export async function createOrder(
+  req: Request,
+  res: Response
+): Promise<Response | void> {
   try {
     // Validar datos de entrada
     const validatedData = createOrderSchema.parse(req.body);
     const usuario_id = req.auth!.id;
-    const isAdmin = req.auth!.role === 'ADMINISTRADOR';
+    const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     // Verificar que el usuario puede crear la orden (debe ser el mismo usuario o admin)
     if (!isAdmin && validatedData.user_id !== usuario_id) {
       return res.status(403).json({
-        message: 'No tienes permisos para crear una orden para otro usuario',
+        message: "No tienes permisos para crear una orden para otro usuario",
       });
     }
 
     // Iniciar transacción
-    await db.query('START TRANSACTION');
+    await db.query("START TRANSACTION");
 
     try {
       // Calcular el total de la orden
@@ -58,7 +61,9 @@ export async function createOrder(req: Request, res: Response): Promise<Response
           precio,
           descuento,
           nombre: `Producto Premium ${producto.producto_id}`,
-          marca: ['Samsung', 'Apple', 'ASUS', 'Logitech', 'Sony'][Math.floor(Math.random() * 5)],
+          marca: ["Samsung", "Apple", "ASUS", "Logitech", "Sony"][
+            Math.floor(Math.random() * 5)
+          ],
           modelo: `Modelo-${producto.producto_id}-${new Date().getFullYear()}`,
           imagen: `https://example.com/images/producto-${producto.producto_id}.jpg`,
         });
@@ -99,7 +104,7 @@ export async function createOrder(req: Request, res: Response): Promise<Response
       }
 
       // Confirmar transacción
-      await db.query('COMMIT');
+      await db.query("COMMIT");
 
       // Obtener la orden creada con sus productos
       const [newOrder] = await db.query<OrderRow[]>(
@@ -118,7 +123,7 @@ export async function createOrder(req: Request, res: Response): Promise<Response
       );
 
       const [orderProducts] = await db.query<OrderProductRow[]>(
-        'SELECT * FROM order_products WHERE orden_id = ?',
+        "SELECT * FROM order_products WHERE orden_id = ?",
         [ordenId]
       );
 
@@ -131,23 +136,23 @@ export async function createOrder(req: Request, res: Response): Promise<Response
       };
 
       res.status(201).json({
-        message: 'Orden creada exitosamente',
+        message: "Orden creada exitosamente",
         data: response,
       });
     } catch (error) {
       // Revertir transacción en caso de error
-      await db.query('ROLLBACK');
+      await db.query("ROLLBACK");
       throw error;
     }
   } catch (error: any) {
-    if (error.name === 'ZodError') {
+    if (error.name === "ZodError") {
       return res.status(400).json({
-        message: 'Datos de entrada inválidos',
+        message: "Datos de entrada inválidos",
         errors: error.errors,
       });
     }
-    console.error('Error al crear orden:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al crear orden:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 }
 
@@ -156,7 +161,10 @@ export async function createOrder(req: Request, res: Response): Promise<Response
  * @param req - Request con parámetros de consulta
  * @param res - Response con órdenes paginadas
  */
-export async function getOrders(req: Request, res: Response): Promise<Response | void> {
+export async function getOrders(
+  req: Request,
+  res: Response
+): Promise<Response | void> {
   try {
     // Validar parámetros de consulta
     const validatedQuery = ordersQuerySchema.parse(req.query);
@@ -172,7 +180,7 @@ export async function getOrders(req: Request, res: Response): Promise<Response |
     } = validatedQuery;
 
     const usuario_id = req.auth!.id;
-    const isAdmin = req.auth!.role === 'ADMINISTRADOR';
+    const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     // Construir la consulta base
     let baseQuery = `
@@ -190,47 +198,47 @@ export async function getOrders(req: Request, res: Response): Promise<Response |
       WHERE 1=1
     `;
 
-    let countQuery = 'SELECT COUNT(*) as total FROM orders WHERE 1=1';
+    let countQuery = "SELECT COUNT(*) as total FROM orders WHERE 1=1";
     const queryParams: any[] = [];
 
     // Si no es admin, solo puede ver sus propias órdenes
     if (!isAdmin) {
-      baseQuery += ' AND user_id = ?';
-      countQuery += ' AND user_id = ?';
+      baseQuery += " AND user_id = ?";
+      countQuery += " AND user_id = ?";
       queryParams.push(usuario_id);
     }
 
     // Aplicar filtros
     if (user_id && isAdmin) {
-      baseQuery += ' AND user_id = ?';
-      countQuery += ' AND user_id = ?';
+      baseQuery += " AND user_id = ?";
+      countQuery += " AND user_id = ?";
       queryParams.push(user_id);
     }
 
     if (estado) {
-      baseQuery += ' AND estado = ?';
-      countQuery += ' AND estado = ?';
+      baseQuery += " AND estado = ?";
+      countQuery += " AND estado = ?";
       queryParams.push(estado);
     }
 
     if (fecha_desde) {
-      baseQuery += ' AND fecha_pago >= ?';
-      countQuery += ' AND fecha_pago >= ?';
+      baseQuery += " AND fecha_pago >= ?";
+      countQuery += " AND fecha_pago >= ?";
       queryParams.push(fecha_desde);
     }
 
     if (fecha_hasta) {
-      baseQuery += ' AND fecha_pago <= ?';
-      countQuery += ' AND fecha_pago <= ?';
+      baseQuery += " AND fecha_pago <= ?";
+      countQuery += " AND fecha_pago <= ?";
       queryParams.push(fecha_hasta);
     }
 
     // Aplicar ordenamiento
-    if (sort === 'fecha_pago') {
+    if (sort === "fecha_pago") {
       baseQuery += ` ORDER BY fecha_pago ${order}`;
-    } else if (sort === 'total') {
+    } else if (sort === "total") {
       baseQuery += ` ORDER BY total ${order}`;
-    } else if (sort === 'estado') {
+    } else if (sort === "estado") {
       baseQuery += ` ORDER BY estado ${order}`;
     }
 
@@ -253,7 +261,7 @@ export async function getOrders(req: Request, res: Response): Promise<Response |
     const next = currentPage < pages ? currentPage + 1 : null;
 
     // Aplicar paginación
-    baseQuery += ' LIMIT ? OFFSET ?';
+    baseQuery += " LIMIT ? OFFSET ?";
     queryParams.push(limit, offset);
 
     // Ejecutar consulta
@@ -263,7 +271,7 @@ export async function getOrders(req: Request, res: Response): Promise<Response |
     const ordersWithProducts: OrderResponseDTO[] = [];
     for (const order of orders) {
       const [products] = await db.query<OrderProductRow[]>(
-        'SELECT * FROM order_products WHERE orden_id = ?',
+        "SELECT * FROM order_products WHERE orden_id = ?",
         [order.orden_id]
       );
       ordersWithProducts.push({
@@ -283,14 +291,14 @@ export async function getOrders(req: Request, res: Response): Promise<Response |
 
     res.status(200).json(response);
   } catch (error: any) {
-    if (error.name === 'ZodError') {
+    if (error.name === "ZodError") {
       return res.status(400).json({
-        message: 'Parámetros de consulta inválidos',
+        message: "Parámetros de consulta inválidos",
         errors: error.errors,
       });
     }
-    console.error('Error al obtener órdenes:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al obtener órdenes:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 }
 
@@ -299,12 +307,15 @@ export async function getOrders(req: Request, res: Response): Promise<Response |
  * @param req - Request con ID de la orden
  * @param res - Response con la orden encontrada
  */
-export async function getOrderById(req: Request, res: Response): Promise<Response | void> {
+export async function getOrderById(
+  req: Request,
+  res: Response
+): Promise<Response | void> {
   try {
     // Validar parámetro ID
     const { id } = orderIdSchema.parse(req.params);
     const usuario_id = req.auth!.id;
-    const isAdmin = req.auth!.role === 'ADMINISTRADOR';
+    const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     // Buscar la orden
     const [order] = await db.query<OrderRow[]>(
@@ -326,19 +337,19 @@ export async function getOrderById(req: Request, res: Response): Promise<Respons
     }
 
     if (order.length === 0) {
-      return res.status(404).json({ message: 'Orden no encontrada' });
+      return res.status(404).json({ message: "Orden no encontrada" });
     }
 
     // Verificar permisos (propietario o admin)
     if (!isAdmin && order[0].user_id !== usuario_id) {
       return res.status(403).json({
-        message: 'No tienes permisos para ver esta orden',
+        message: "No tienes permisos para ver esta orden",
       });
     }
 
     // Obtener productos de la orden
     const [products] = await db.query<OrderProductRow[]>(
-      'SELECT * FROM order_products WHERE orden_id = ?',
+      "SELECT * FROM order_products WHERE orden_id = ?",
       [id]
     );
 
@@ -349,14 +360,14 @@ export async function getOrderById(req: Request, res: Response): Promise<Respons
 
     res.status(200).json({ data: response });
   } catch (error: any) {
-    if (error.name === 'ZodError') {
+    if (error.name === "ZodError") {
       return res.status(400).json({
-        message: 'ID inválido',
+        message: "ID inválido",
         errors: error.errors,
       });
     }
-    console.error('Error al obtener orden:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al obtener orden:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 }
 
@@ -365,17 +376,20 @@ export async function getOrderById(req: Request, res: Response): Promise<Respons
  * @param req - Request con ID y datos a actualizar
  * @param res - Response con la orden actualizada
  */
-export async function updateOrder(req: Request, res: Response): Promise<Response | void> {
+export async function updateOrder(
+  req: Request,
+  res: Response
+): Promise<Response | void> {
   try {
     // Validar parámetro ID y datos
     const { id } = orderIdSchema.parse(req.params);
     const validatedData = updateOrderSchema.parse(req.body);
     const usuario_id = req.auth!.id;
-    const isAdmin = req.auth!.role === 'ADMINISTRADOR';
+    const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     // Verificar que la orden existe
     const [existingOrder] = await db.query<RowDataPacket[]>(
-      'SELECT user_id, estado FROM orders WHERE orden_id = ?',
+      "SELECT user_id, estado FROM orders WHERE orden_id = ?",
       [id]
     );
 
@@ -384,7 +398,7 @@ export async function updateOrder(req: Request, res: Response): Promise<Response
     }
 
     if (existingOrder.length === 0) {
-      return res.status(404).json({ message: 'Orden no encontrada' });
+      return res.status(404).json({ message: "Orden no encontrada" });
     }
 
     // Verificar permisos
@@ -394,13 +408,13 @@ export async function updateOrder(req: Request, res: Response): Promise<Response
     if (validatedData.estado && !canUpdateStatus) {
       return res.status(403).json({
         message:
-          'Solo los administradores pueden cambiar el estado de la orden',
+          "Solo los administradores pueden cambiar el estado de la orden",
       });
     }
 
     if (validatedData.direccion && !canUpdateAddress) {
       return res.status(403).json({
-        message: 'No tienes permisos para actualizar esta orden',
+        message: "No tienes permisos para actualizar esta orden",
       });
     }
 
@@ -409,29 +423,34 @@ export async function updateOrder(req: Request, res: Response): Promise<Response
     const updateValues: any[] = [];
 
     if (validatedData.estado !== undefined) {
-      updateFields.push('estado = ?');
+      updateFields.push("estado = ?");
       updateValues.push(validatedData.estado);
     }
 
     if (validatedData.direccion !== undefined) {
-      updateFields.push('direccion = ?');
+      updateFields.push("direccion = ?");
       updateValues.push(validatedData.direccion);
     }
 
     if (validatedData.fecha_entrega !== undefined) {
-      updateFields.push('fecha_entrega = ?');
-      updateValues.push(validatedData.fecha_entrega);
+      // Convertir ISO a formato MySQL
+      const fechaEntrega = new Date(validatedData.fecha_entrega)
+        .toISOString()
+        .replace("T", " ")
+        .replace(".000Z", "");
+      updateFields.push("fecha_entrega = ?");
+      updateValues.push(fechaEntrega);
     }
 
     if (updateFields.length === 0) {
-      return res.status(400).json({ message: 'No hay campos para actualizar' });
+      return res.status(400).json({ message: "No hay campos para actualizar" });
     }
 
     updateValues.push(id);
 
     // Actualizar la orden
     await db.query(
-      `UPDATE orders SET ${updateFields.join(', ')} WHERE orden_id = ?`,
+      `UPDATE orders SET ${updateFields.join(", ")} WHERE orden_id = ?`,
       updateValues
     );
 
@@ -451,9 +470,11 @@ export async function updateOrder(req: Request, res: Response): Promise<Response
       [id]
     );
 
-    if (!updatedOrder[0]) {      throw new Error("No se pudo actualizar la orden");    }
+    if (!updatedOrder[0]) {
+      throw new Error("No se pudo actualizar la orden");
+    }
     const [products] = await db.query<OrderProductRow[]>(
-      'SELECT * FROM order_products WHERE orden_id = ?',
+      "SELECT * FROM order_products WHERE orden_id = ?",
       [id]
     );
 
@@ -465,24 +486,28 @@ export async function updateOrder(req: Request, res: Response): Promise<Response
       nombre_completo: updatedOrder[0].nombre_completo!,
       estado: updatedOrder[0].estado!,
       total: updatedOrder[0].total!,
-      ...(updatedOrder[0].fecha_pago && { fecha_pago: updatedOrder[0].fecha_pago }),
-      ...(updatedOrder[0].fecha_entrega && { fecha_entrega: updatedOrder[0].fecha_entrega }),
+      ...(updatedOrder[0].fecha_pago && {
+        fecha_pago: updatedOrder[0].fecha_pago,
+      }),
+      ...(updatedOrder[0].fecha_entrega && {
+        fecha_entrega: updatedOrder[0].fecha_entrega,
+      }),
       productos: products,
     };
 
     res.status(200).json({
-      message: 'Orden actualizada exitosamente',
+      message: "Orden actualizada exitosamente",
       data: response,
     });
   } catch (error: any) {
-    if (error.name === 'ZodError') {
+    if (error.name === "ZodError") {
       return res.status(400).json({
-        message: 'Datos inválidos',
+        message: "Datos inválidos",
         errors: error.errors,
       });
     }
-    console.error('Error al actualizar orden:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al actualizar orden:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 }
 
@@ -491,43 +516,46 @@ export async function updateOrder(req: Request, res: Response): Promise<Response
  * @param req - Request con ID de la orden
  * @param res - Response de confirmación
  */
-export async function deleteOrder(req: Request, res: Response): Promise<Response | void> {
+export async function deleteOrder(
+  req: Request,
+  res: Response
+): Promise<Response | void> {
   try {
     // Validar parámetro ID
     const { id } = orderIdSchema.parse(req.params);
     const usuario_id = req.auth!.id;
-    const isAdmin = req.auth!.role === 'ADMINISTRADOR';
+    const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     // Verificar que la orden existe
     const [existingOrder] = await db.query<RowDataPacket[]>(
-      'SELECT user_id, estado FROM orders WHERE orden_id = ?',
+      "SELECT user_id, estado FROM orders WHERE orden_id = ?",
       [id]
     );
 
     if (existingOrder.length === 0) {
-      return res.status(404).json({ message: 'Orden no encontrada' });
+      return res.status(404).json({ message: "Orden no encontrada" });
     }
 
     // Solo admins pueden eliminar órdenes
     if (!isAdmin) {
       return res.status(403).json({
-        message: 'Solo los administradores pueden eliminar órdenes',
+        message: "Solo los administradores pueden eliminar órdenes",
       });
     }
 
     // Eliminar la orden (los productos se eliminan automáticamente por CASCADE)
-    await db.query('DELETE FROM orders WHERE orden_id = ?', [id]);
+    await db.query("DELETE FROM orders WHERE orden_id = ?", [id]);
 
-    res.status(200).json({ message: 'Orden eliminada exitosamente' });
+    res.status(200).json({ message: "Orden eliminada exitosamente" });
   } catch (error: any) {
-    if (error.name === 'ZodError') {
+    if (error.name === "ZodError") {
       return res.status(400).json({
-        message: 'ID inválido',
+        message: "ID inválido",
         errors: error.errors,
       });
     }
-    console.error('Error al eliminar orden:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al eliminar orden:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 }
 
@@ -536,17 +564,20 @@ export async function deleteOrder(req: Request, res: Response): Promise<Response
  * @param req - Request con datos del usuario
  * @param res - Response con estadísticas
  */
-export async function getOrderStats(req: Request, res: Response): Promise<Response | void> {
+export async function getOrderStats(
+  req: Request,
+  res: Response
+): Promise<Response | void> {
   try {
     const usuario_id = req.auth!.id;
-    const isAdmin = req.auth!.role === 'ADMINISTRADOR';
+    const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
-    let userCondition = '';
+    let userCondition = "";
     const queryParams: any[] = [];
 
     // Si no es admin, solo puede ver sus propias estadísticas
     if (!isAdmin) {
-      userCondition = 'WHERE user_id = ?';
+      userCondition = "WHERE user_id = ?";
       queryParams.push(usuario_id);
     }
 
@@ -575,7 +606,7 @@ export async function getOrderStats(req: Request, res: Response): Promise<Respon
         COUNT(DISTINCT op.orden_id) as veces_ordenado
       FROM order_products op
       JOIN orders o ON op.orden_id = o.orden_id
-      ${userCondition ? 'WHERE o.user_id = ?' : ''}
+      ${userCondition ? "WHERE o.user_id = ?" : ""}
       GROUP BY op.producto_id, op.nombre, op.marca, op.modelo
       ORDER BY total_comprado DESC
       LIMIT 5`,
@@ -589,7 +620,7 @@ export async function getOrderStats(req: Request, res: Response): Promise<Respon
       },
     });
   } catch (error: any) {
-    console.error('Error al obtener estadísticas:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al obtener estadísticas:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 }

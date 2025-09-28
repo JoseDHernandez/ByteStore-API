@@ -1,339 +1,143 @@
 # 📝 Reviews Service - ByteStore API
 
-## 📑 Índice
+Este servicio maneja las operaciones relacionadas con las reseñas de productos en la plataforma ByteStore. Permite a los usuarios crear, leer, actualizar y eliminar reseñas, así como gestionar las respuestas a estas reseñas.
 
-- [🚀 Descripción](#-descripción)
-- [✨ Características Principales](#-características-principales)
-- [🛠️ Tecnologías Utilizadas](#️-tecnologías-utilizadas)
-- [📋 Prerrequisitos](#-prerrequisitos)
-- [🔧 Instalación](#-instalación)
-- [Variables de Entorno](#variables-de-entorno)
-- [🚀 Ejecución](#-ejecución)
-- [📚 Documentación de la API](#-documentación-de-la-api)
-  - [🔐 Autenticación](#-autenticación)
-  - [📝 Endpoints de Reviews](#-endpoints-de-reviews)
-- [🗄️ Estructura de la Base de Datos](#️-estructura-de-la-base-de-datos)
-- [🚨 Códigos de Estado HTTP](#-códigos-de-estado-http)
-- [📁 Estructura del Proyecto](#-estructura-del-proyecto)
-- [🐳 Docker](#-docker)
-- [📝 Notas Importantes](#-notas-importantes)
-- [🤝 Contribución](#-contribución)
-- [📄 Licencia](#-licencia)
+Para los tokens de autenticación, se utiliza JWT (JSON Web Tokens). Asegúrate de incluir el token en el encabezado `Authorization` de tus solicitudes para los endpoints que requieren autenticación. Este token debe ser obtenido a través del [servicio de usuarios](https://github.com/JoseDHernandez/ByteStore-API/tree/main/user-service).
 
-## 🚀 Descripción
+## API Endpoints
 
-Microservicio especializado en la gestión de reseñas y calificaciones para la plataforma ByteStore. Proporciona un sistema completo de reviews con autenticación, validaciones robustas y control de permisos granular.
+### Obtener todas las reseñas
 
-## ✨ Características Principales
+Para obtener todas las reseñas de productos.
 
-- **Sistema de Calificaciones**: Reviews con puntuación de 1 a 5 estrellas
-- **Autenticación JWT**: Seguridad basada en tokens con validación de roles
-- **CRUD Completo**: Operaciones completas para reviews/calificaciones
-- **Paginación Avanzada**: Sistema de paginación con estructura estándar
-- **Filtros y Ordenamiento**: Búsqueda por producto, usuario, calificación y fechas
-- **Validaciones Robustas**: Esquemas Zod para validación de datos
-- **Control de Permisos**: Sistema de autorización propietario/admin
-- **Base de Datos MySQL**: Persistencia confiable con transacciones
-- **Formato ISO**: Manejo estándar de fechas
+**GET** `/`
 
-## 🛠️ Tecnologías Utilizadas
-
-- **Node.js** (v18+) - Runtime de JavaScript
-- **TypeScript** - Tipado estático
-- **Express.js** - Framework web
-- **MySQL2** - Driver de base de datos
-- **JWT** - Autenticación y autorización
-- **Zod** - Validación de esquemas
-- **Morgan** - Logging de requests
-- **CORS** - Manejo de políticas de origen cruzado
-
-## 📋 Prerrequisitos
-
-- Node.js >= 18.0.0
-- npm >= 8.0.0
-- MySQL >= 8.0
-- Git
-
-## 🔧 Instalación
-
-### 1. Clonar el repositorio
-
-```bash
-git clone <repository-url>
-cd ByteStore-API/review-service
-```
-
-### 2. Instalar dependencias
-
-```bash
-npm install
-```
-
-### 3. Configurar variables de entorno
-
-```bash
-cp .env.example .env
-```
-
-Editar `.env` con tus configuraciones.
-
-### 4. Configurar la base de datos
-
-- Crear la base de datos MySQL
-- Ejecutar el script `init/data.sql` para crear las tablas y datos de prueba
-
-## Variables de Entorno
-
-| Variable         | Descripción                              | Valor por defecto                                               |
-| ---------------- | ---------------------------------------- | --------------------------------------------------------------- |
-| `PORT`           | Puerto del servidor                      | `3005`                                                          |
-| `NODE_ENV`       | Entorno de ejecución                     | `development`                                                   |
-| `DB_HOST`        | Host de la base de datos MySQL           | `localhost`                                                     |
-| `DB_PORT`        | Puerto de la base de datos MySQL         | `3306`                                                          |
-| `DB_USER`        | Usuario de la base de datos              | `root`                                                          |
-| `DB_PASSWORD`    | Contraseña de la base de datos           | `password`                                                      |
-| `DB_NAME`        | Nombre de la base de datos               | `bytestore_reviews`                                             |
-| `JWT_SECRET`     | Clave secreta para firmar los tokens JWT | `@y*&0a%K%7P0t@uQ^38HN$y4Z^PK#0zE7dem700Bbf&pC6HF$aU^ARkE@u$nn` |
-| `JWT_EXPIRES_IN` | Duración del token JWT                   | `30d`                                                           |
-
-### Ejemplo de archivo .env
-
-```env
-# Configuración del servidor
-PORT=3005
-NODE_ENV=development
-
-# Configuración de la base de datos
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=password
-DB_NAME=bytestore_reviews
-
-# Configuración JWT
-JWT_SECRET=@y*&0a%K%7P0t@uQ^38HN$y4Z^PK#0zE7dem700Bbf&pC6HF$aU^ARkE@u$nn
-JWT_EXPIRES_IN=30d
-```
-
-## 🚀 Ejecución
-
-### Desarrollo
-
-```bash
-npm run dev
-```
-
-El servidor se ejecutará en `http://localhost:3005` con recarga automática.
-
-### Producción
-
-```bash
-npm run build
-npm start
-```
-
-## 📚 Documentación de la API
-
-### Base URL
-
-```
-http://localhost:3005/api
-```
-
-### 🔐 Autenticación
-
-Este servicio utiliza **JSON Web Tokens (JWT)** para la autenticación y autorización.
-
-#### Obtener Token
-
-Para obtener un token JWT, debes autenticarte a través del servicio de usuarios:
-
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "usuario@ejemplo.com",
-  "password": "tu_password"
-}
-```
-
-#### Usar Token en Requests
-
-Incluye el token en el header `Authorization` de todas las peticiones protegidas:
-
-```http
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-#### Roles y Permisos
-
-- **Acceso Público**: Puede ver todas las reviews (GET /reviews, GET /reviews/:id)
-- **Usuario Autenticado**: Puede crear reviews (POST /reviews)
-- **Propietario o Admin**: Puede editar y eliminar sus propias reviews (PUT /reviews/:id, DELETE /reviews/:id)
-
-#### Ejemplo de Request Autenticado
-
-```javascript
-fetch('http://localhost:3005/api/reviews', {
-  method: 'POST',
-  headers: {
-    Authorization: 'Bearer ' + token,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    producto_id: 1,
-    calificacion: 5,
-    comentario: 'Excelente producto',
-  }),
-});
-```
-
-### 📝 Endpoints de Reviews
-
-#### Obtener Reviews
-
-```http
-GET /api/reviews?page=1&limit=10&producto_id=1&calificacion=5
-```
-
-**Query Parameters:**
-
-- `page` (number): Página actual (default: 1)
-- `limit` (number): Elementos por página (default: 10, max: 100)
-- `producto_id` (number): Filtrar por producto
-- `user_id` (number): Filtrar por usuario (solo admin)
-- `calificacion` (number): Filtrar por calificación (1-5)
-- `fecha_desde` (string): Fecha desde (ISO format)
-- `fecha_hasta` (string): Fecha hasta (ISO format)
-- `sort` (string): Campo de ordenamiento (`fecha_creacion`, `calificacion`)
-- `order` (string): Dirección (`asc`, `desc`)
-
-**Response:**
+**Respuesta**
 
 ```json
 {
-  "total": 51,
-  "pages": 3,
+  "total": 15,
+  "pages": 1,
   "first": 1,
-  "next": 2,
+  "next": null,
   "prev": null,
   "data": [
     {
-      "calificacion_id": 1,
-      "user_id": 1,
-      "producto_id": 1,
-      "calificacion": 5,
-      "comentario": "Excelente producto",
-      "fecha_creacion": "2024-01-15T10:30:00.000Z"
+      "calificacion_id": 15,
+      "producto_id": 13,
+      "usuario_id": "01991c11-412e-7569-bb85-a4f77ba08bb7",
+      "nombre_usuario": "Usuario",
+      "calificacion": 3,
+      "comentario": "Producto decente pero...",
+      "fecha": "2024-01-30T13:45:00.000Z"
     }
   ]
 }
 ```
 
-#### Crear Review
+---
 
-```http
-POST /api/reviews
-Content-Type: application/json
-Authorization: Bearer <token>
+### Obtener reseñas por ID
 
+Para obtener una reseña específica por su ID.
+
+**GET** `/:id`
+
+**Respuesta**
+
+```json
 {
-  "producto_id": 1,
-  "calificacion": 5,
-  "comentario": "Excelente producto, muy recomendado"
+  "calificacion_id": 15,
+  "producto_id": 13,
+  "usuario_id": "01991c11-412e-7569-bb85-a4f77ba08bb7",
+  "nombre_usuario": "Usuario",
+  "calificacion": 3,
+  "comentario": "Producto decente pero...",
+  "fecha": "2024-01-30T13:45:00.000Z"
 }
 ```
 
-#### Obtener Review por ID
+---
 
-```http
-GET /api/reviews/:id
-```
+### Crear una nueva reseña (Requiere autenticación)
 
-#### Actualizar Review
+Para crear una nueva reseña de producto.
 
-```http
-PUT /api/reviews/:id
-Content-Type: application/json
-Authorization: Bearer <token>
+**POST** `/`
 
+**Cuerpo de la solicitud**
+
+```json
 {
+  "producto_id": 5,
   "calificacion": 4,
-  "comentario": "Buen producto, actualizo mi review"
+  "comentario": "Un buen producto, lo recomiendo."
 }
 ```
 
-#### Eliminar Review
+**Respuesta**
 
-```http
-DELETE /api/reviews/:id
-Authorization: Bearer <token>
+```json
+{
+  "message": "Reseña creada exitosamente",
+  "data": {
+    "calificacion_id": 17,
+    "producto_id": 5,
+    "usuario_id": "01991c0e-16f0-707f-9f6f-3614666caead",
+    "nombre_usuario": "Usuario",
+    "calificacion": 4,
+    "comentario": "Un buen producto, lo recomiendo.",
+    "fecha": "2025-09-28T03:44:01.000Z"
+  }
+}
 ```
 
-## 🗄️ Estructura de la Base de Datos
+---
 
-### Tabla: calificaciones
+### Actualizar una reseña (Requiere autenticación)
 
-```sql
-calificacion_id (PK, AUTO_INCREMENT) | user_id (FK) | producto_id | calificacion (1-5) | comentario (TEXT) | fecha_creacion (DATETIME)
+Para actualizar una reseña existente.
+
+**PUT** `/:id`
+
+**Cuerpo de la solicitud**
+
+```json
+{
+  "calificacion": 5,
+  "comentario": "Actualización: Excelente producto!"
+}
 ```
 
-## 🚨 Códigos de Estado HTTP
+**Respuesta**
 
-- **200** - OK (operación exitosa)
-- **201** - Created (recurso creado)
-- **400** - Bad Request (datos inválidos)
-- **401** - Unauthorized (no autenticado)
-- **403** - Forbidden (sin permisos)
-- **404** - Not Found (recurso no encontrado)
-- **500** - Internal Server Error (error del servidor)
-
-## 📁 Estructura del Proyecto
-
-```
-review-service/
-├── src/
-│   ├── controllers/     # Controladores de las rutas
-│   ├── middleware/      # Middleware de autenticación
-│   ├── routes/         # Definición de rutas
-│   ├── schemas/        # Validaciones Zod
-│   ├── types/          # Tipos TypeScript
-│   ├── utils/          # Utilidades (JWT)
-│   ├── db.ts           # Configuración de base de datos
-│   └── index.ts        # Punto de entrada
-├── init/
-│   └── data.sql        # Script de inicialización
-├── package.json
-├── tsconfig.json
-└── README.md
+```json
+{
+  "message": "Reseña actualizada exitosamente",
+  "data": {
+    "calificacion_id": 17,
+    "producto_id": 5,
+    "usuario_id": "01991c0e-16f0-707f-9f6f-3614666caead",
+    "nombre_usuario": "Usuario",
+    "calificacion": 5,
+    "comentario": "Actualización: Excelente producto!",
+    "fecha": "2025-09-28T03:44:01.000Z"
+  }
+}
 ```
 
-## 🐳 Docker
+---
 
-Para ejecutar con Docker:
+### Eliminar una reseña (Requiere autenticación)
 
-```bash
-# Construir imagen
-docker build -t review-service .
+Para eliminar una reseña existente.
 
-# Ejecutar contenedor
-docker run -p 3005:3005 --env-file .env review-service
+**DELETE** `/:id`
+
+**Respuesta**
+
+```json
+{
+  "message": "Reseña eliminada exitosamente"
+}
 ```
-
-## 📝 Notas Importantes
-
-- Las fechas se manejan en formato ISO 8601
-- La paginación sigue la estructura estándar especificada
-- Las calificaciones van de 1 a 5 estrellas
-- Las transacciones garantizan consistencia en operaciones complejas
-- El middleware de autenticación valida tanto la existencia del token como del usuario
-- Solo el propietario de una review o un admin puede modificarla o eliminarla
-
-## 🤝 Contribución
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Abre un Pull Request

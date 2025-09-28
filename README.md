@@ -10,6 +10,19 @@ Repositorio monorepo que contiene los servicios de la API para la aplicación [B
 
 Cada servicio es una aplicación independiente que se comunica con los demás a través de HTTP. Cada uno tiene su propia base de datos y lógica de negocio.
 
+Para acceder a los endpoints de cada servicio, use las siguientes URLs base:
+
+- `http://localhost:3000/users/` para el servicio de usuarios.
+- `http://localhost:3000/products/` para el servicio de productos.
+- `http://localhost:3000/orders/` para el servicio de pedidos.
+- `http://localhost:3000/reviews/` para el servicio de calificaciones.
+- `http://localhost:3000/carts/` para el servicio de carrito de compras.
+
+_Ejemplos:_
+
+- `http://localhost:3000/users/sign-in` para iniciar sesión en el servicio de usuarios.
+- `http://localhost:3000/products?limit=10&page=1` para obtener una lista paginada de productos en el servicio de productos.
+
 ---
 
 ## Tecnologías utilizadas

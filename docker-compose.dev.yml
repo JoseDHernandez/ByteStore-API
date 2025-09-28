@@ -147,7 +147,7 @@ services:
     ports:
       - "3004:3004"
     environment:
-      DB_HOST: orders-db
+      DB_HOST: mysql_orders
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: password
@@ -177,6 +177,7 @@ services:
     volumes:
       - orders_data:/var/lib/mysql
       - ./order-service/init:/docker-entrypoint-initdb.d
+
     networks:
       - app_network
 
@@ -192,7 +193,7 @@ services:
     ports:
       - "3005:3005"
     environment:
-      DB_HOST: reviews-db
+      DB_HOST: mysql_reviews
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: password
