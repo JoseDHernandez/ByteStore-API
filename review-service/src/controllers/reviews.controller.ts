@@ -1,17 +1,17 @@
-import type { Request, Response } from 'express';
-import { db } from '../db.js';
-import type { ResultSetHeader, RowDataPacket } from 'mysql2';
+import type { Request, Response } from "express";
+import { db } from "../db.ts";
+import type { ResultSetHeader, RowDataPacket } from "mysql2";
 import type {
   ReviewResponseDTO,
   ReviewsPaginatedResponse,
-} from '../types/review.js';
+} from "../types/review.ts";
 import {
   createReviewSchema,
   updateReviewSchema,
   reviewIdSchema,
   reviewsQuerySchema,
   productIdSchema,
-} from '../schemas/review.schema.js';
+} from "../schemas/review.schema.ts";
 
 type ReviewRow = RowDataPacket & ReviewResponseDTO;
 
@@ -24,20 +24,20 @@ export async function createReview(req: Request, res: Response) {
 
     // Verificar si el usuario ya ha reseñado este producto
     const [existingReview] = await db.query<RowDataPacket[]>(
-      'SELECT calificacion_id FROM calificaciones WHERE producto_id = ? AND usuario_id = ?',
+      "SELECT calificacion_id FROM calificaciones WHERE producto_id = ? AND usuario_id = ?",
       [validatedData.producto_id, usuario_id]
     );
 
     if (existingReview.length > 0) {
       return res.status(409).json({
         message:
-          'Ya has reseñado este producto. Puedes actualizar tu reseña existente.',
+          "Ya has reseñado este producto. Puedes actualizar tu reseña existente.",
       });
     }
 
     // Crear la reseña
     const [result] = await db.query<ResultSetHeader>(
-      'INSERT INTO calificaciones (producto_id, usuario_id, calificacion, comentario, fecha) VALUES (?, ?, ?, ?, NOW())',
+      "INSERT INTO calificaciones (producto_id, usuario_id, calificacion, comentario, fecha) VALUES (?, ?, ?, ?, NOW())",
       [
         validatedData.producto_id,
         usuario_id,
@@ -62,18 +62,18 @@ export async function createReview(req: Request, res: Response) {
     );
 
     res.status(201).json({
-      message: 'Reseña creada exitosamente',
+      message: "Reseña creada exitosamente",
       data: newReview[0],
     });
   } catch (error: any) {
-    if (error.name === 'ZodError') {
+    if (error.name === "ZodError") {
       return res.status(400).json({
-        message: 'Datos de entrada inválidos',
+        message: "Datos de entrada inválidos",
         errors: error.errors,
       });
     }
-    console.error('Error al crear reseña:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al crear reseña:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 }
 
@@ -107,38 +107,38 @@ export async function getReviews(req: Request, res: Response) {
       WHERE 1=1
     `;
 
-    let countQuery = 'SELECT COUNT(*) as total FROM calificaciones c WHERE 1=1';
+    let countQuery = "SELECT COUNT(*) as total FROM calificaciones c WHERE 1=1";
     const queryParams: any[] = [];
 
     // Aplicar filtros
     if (producto_id) {
-      baseQuery += ' AND c.producto_id = ?';
-      countQuery += ' AND c.producto_id = ?';
+      baseQuery += " AND c.producto_id = ?";
+      countQuery += " AND c.producto_id = ?";
       queryParams.push(producto_id);
     }
 
     if (usuario_id) {
-      baseQuery += ' AND c.usuario_id = ?';
-      countQuery += ' AND c.usuario_id = ?';
+      baseQuery += " AND c.usuario_id = ?";
+      countQuery += " AND c.usuario_id = ?";
       queryParams.push(usuario_id);
     }
 
     if (calificacion_min) {
-      baseQuery += ' AND c.calificacion >= ?';
-      countQuery += ' AND c.calificacion >= ?';
+      baseQuery += " AND c.calificacion >= ?";
+      countQuery += " AND c.calificacion >= ?";
       queryParams.push(calificacion_min);
     }
 
     if (calificacion_max) {
-      baseQuery += ' AND c.calificacion <= ?';
-      countQuery += ' AND c.calificacion <= ?';
+      baseQuery += " AND c.calificacion <= ?";
+      countQuery += " AND c.calificacion <= ?";
       queryParams.push(calificacion_max);
     }
 
     // Aplicar ordenamiento
-    if (sort === 'fecha') {
+    if (sort === "fecha") {
       baseQuery += ` ORDER BY c.fecha ${order}`;
-    } else if (sort === 'calificacion') {
+    } else if (sort === "calificacion") {
       baseQuery += ` ORDER BY c.calificacion ${order}`;
     }
 
@@ -158,7 +158,7 @@ export async function getReviews(req: Request, res: Response) {
     const next = currentPage < pages ? currentPage + 1 : null;
 
     // Aplicar paginación
-    baseQuery += ' LIMIT ? OFFSET ?';
+    baseQuery += " LIMIT ? OFFSET ?";
     queryParams.push(limit, offset);
 
     // Ejecutar consulta
@@ -175,14 +175,14 @@ export async function getReviews(req: Request, res: Response) {
 
     res.status(200).json(response);
   } catch (error: any) {
-    if (error.name === 'ZodError') {
+    if (error.name === "ZodError") {
       return res.status(400).json({
-        message: 'Parámetros de consulta inválidos',
+        message: "Parámetros de consulta inválidos",
         errors: error.errors,
       });
     }
-    console.error('Error al obtener reseñas:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al obtener reseñas:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 }
 
@@ -208,19 +208,19 @@ export async function getReviewById(req: Request, res: Response) {
     );
 
     if (review.length === 0) {
-      return res.status(404).json({ message: 'Reseña no encontrada' });
+      return res.status(404).json({ message: "Reseña no encontrada" });
     }
 
     res.status(200).json({ data: review[0] });
   } catch (error: any) {
-    if (error.name === 'ZodError') {
+    if (error.name === "ZodError") {
       return res.status(400).json({
-        message: 'ID inválido',
+        message: "ID inválido",
         errors: error.errors,
       });
     }
-    console.error('Error al obtener reseña:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al obtener reseña:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 }
 
@@ -231,22 +231,22 @@ export async function updateReview(req: Request, res: Response) {
     const { id } = reviewIdSchema.parse(req.params);
     const validatedData = updateReviewSchema.parse(req.body);
     const usuario_id = req.auth!.id;
-    const isAdmin = req.auth!.role === 'ADMINISTRADOR';
+    const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     // Verificar que la reseña existe
     const [existingReview] = await db.query<RowDataPacket[]>(
-      'SELECT usuario_id FROM calificaciones WHERE calificacion_id = ?',
+      "SELECT usuario_id FROM calificaciones WHERE calificacion_id = ?",
       [id]
     );
 
     if (existingReview.length === 0) {
-      return res.status(404).json({ message: 'Reseña no encontrada' });
+      return res.status(404).json({ message: "Reseña no encontrada" });
     }
 
     // Verificar permisos (propietario o admin)
     if (!isAdmin && existingReview[0].usuario_id !== usuario_id) {
       return res.status(403).json({
-        message: 'No tienes permisos para actualizar esta reseña',
+        message: "No tienes permisos para actualizar esta reseña",
       });
     }
 
@@ -255,17 +255,17 @@ export async function updateReview(req: Request, res: Response) {
     const updateValues: any[] = [];
 
     if (validatedData.calificacion !== undefined) {
-      updateFields.push('calificacion = ?');
+      updateFields.push("calificacion = ?");
       updateValues.push(validatedData.calificacion);
     }
 
     if (validatedData.comentario !== undefined) {
-      updateFields.push('comentario = ?');
+      updateFields.push("comentario = ?");
       updateValues.push(validatedData.comentario);
     }
 
     if (updateFields.length === 0) {
-      return res.status(400).json({ message: 'No hay campos para actualizar' });
+      return res.status(400).json({ message: "No hay campos para actualizar" });
     }
 
     updateValues.push(id);
@@ -273,7 +273,7 @@ export async function updateReview(req: Request, res: Response) {
     // Actualizar la reseña
     await db.query(
       `UPDATE calificaciones SET ${updateFields.join(
-        ', '
+        ", "
       )} WHERE calificacion_id = ?`,
       updateValues
     );
@@ -294,18 +294,18 @@ export async function updateReview(req: Request, res: Response) {
     );
 
     res.status(200).json({
-      message: 'Reseña actualizada exitosamente',
+      message: "Reseña actualizada exitosamente",
       data: updatedReview[0],
     });
   } catch (error: any) {
-    if (error.name === 'ZodError') {
+    if (error.name === "ZodError") {
       return res.status(400).json({
-        message: 'Datos inválidos',
+        message: "Datos inválidos",
         errors: error.errors,
       });
     }
-    console.error('Error al actualizar reseña:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al actualizar reseña:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 }
 
@@ -315,40 +315,40 @@ export async function deleteReview(req: Request, res: Response) {
     // Validar parámetro ID
     const { id } = reviewIdSchema.parse(req.params);
     const usuario_id = req.auth!.id;
-    const isAdmin = req.auth!.role === 'ADMINISTRADOR';
+    const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     // Verificar que la reseña existe
     const [existingReview] = await db.query<RowDataPacket[]>(
-      'SELECT usuario_id FROM calificaciones WHERE calificacion_id = ?',
+      "SELECT usuario_id FROM calificaciones WHERE calificacion_id = ?",
       [id]
     );
 
     if (existingReview.length === 0) {
-      return res.status(404).json({ message: 'Reseña no encontrada' });
+      return res.status(404).json({ message: "Reseña no encontrada" });
     }
 
     // Verificar permisos (propietario o admin)
     if (!isAdmin && existingReview[0].usuario_id !== usuario_id) {
       return res.status(403).json({
-        message: 'No tienes permisos para eliminar esta reseña',
+        message: "No tienes permisos para eliminar esta reseña",
       });
     }
 
     // Eliminar la reseña
-    await db.query('DELETE FROM calificaciones WHERE calificacion_id = ?', [
+    await db.query("DELETE FROM calificaciones WHERE calificacion_id = ?", [
       id,
     ]);
 
-    res.status(200).json({ message: 'Reseña eliminada exitosamente' });
+    res.status(200).json({ message: "Reseña eliminada exitosamente" });
   } catch (error: any) {
-    if (error.name === 'ZodError') {
+    if (error.name === "ZodError") {
       return res.status(400).json({
-        message: 'ID inválido',
+        message: "ID inválido",
         errors: error.errors,
       });
     }
-    console.error('Error al eliminar reseña:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al eliminar reseña:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 }
 
@@ -375,15 +375,15 @@ export async function getReviewsByProduct(req: Request, res: Response) {
     `;
 
     // Aplicar ordenamiento
-    if (sort === 'fecha') {
+    if (sort === "fecha") {
       baseQuery += ` ORDER BY c.fecha ${order}`;
-    } else if (sort === 'calificacion') {
+    } else if (sort === "calificacion") {
       baseQuery += ` ORDER BY c.calificacion ${order}`;
     }
 
     // Obtener total de registros
     const [totalResult] = await db.query<RowDataPacket[]>(
-      'SELECT COUNT(*) as total FROM calificaciones WHERE producto_id = ?',
+      "SELECT COUNT(*) as total FROM calificaciones WHERE producto_id = ?",
       [producto_id]
     );
     const total = totalResult[0].total;
@@ -397,7 +397,7 @@ export async function getReviewsByProduct(req: Request, res: Response) {
     const next = currentPage < pages ? currentPage + 1 : null;
 
     // Aplicar paginación
-    baseQuery += ' LIMIT ? OFFSET ?';
+    baseQuery += " LIMIT ? OFFSET ?";
 
     // Ejecutar consulta
     const [reviews] = await db.query<ReviewRow[]>(baseQuery, [
@@ -417,13 +417,13 @@ export async function getReviewsByProduct(req: Request, res: Response) {
 
     res.status(200).json(response);
   } catch (error: any) {
-    if (error.name === 'ZodError') {
+    if (error.name === "ZodError") {
       return res.status(400).json({
-        message: 'Parámetros inválidos',
+        message: "Parámetros inválidos",
         errors: error.errors,
       });
     }
-    console.error('Error al obtener reseñas del producto:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error("Error al obtener reseñas del producto:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 }

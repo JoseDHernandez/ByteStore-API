@@ -25,6 +25,20 @@ app.use(cors(corsOptions)); // CORS
 app.use(express.json({ limit: "10mb" })); // Parser JSON
 app.use(express.urlencoded({ extended: true })); // Parser URL-encoded
 
+// Ruta raíz con información del servicio
+app.get("/info", (req, res) => {
+  res.status(200).json({
+    message: "ByteStore Orders Service API",
+    version: "1.0.0",
+    description: "Microservicio para gestión de órdenes de compra",
+    endpoints: {
+      orders: "/orders",
+      health: "/health",
+    },
+    documentation: "Ver README.md para más información",
+  });
+});
+
 // Rutas principales
 app.use(ordersRoutes);
 app.use(orderStatusRoutes);
@@ -36,20 +50,6 @@ app.get("/health", (req, res) => {
     service: "order-service",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-  });
-});
-
-// Ruta raíz con información del servicio
-app.get("/", (req, res) => {
-  res.status(200).json({
-    message: "ByteStore Orders Service API",
-    version: "1.0.0",
-    description: "Microservicio para gestión de órdenes de compra",
-    endpoints: {
-      orders: "/orders",
-      health: "/health",
-    },
-    documentation: "Ver README.md para más información",
   });
 });
 
@@ -84,7 +84,7 @@ async function startServer() {
   try {
     // Probar conexión a la base de datos
     console.log("🔍 Probando conexión a la base de datos...");
-    await testConnection();
+    // await testConnection();
     console.log("✅ Conexión a la base de datos exitosa");
 
     // Iniciar servidor

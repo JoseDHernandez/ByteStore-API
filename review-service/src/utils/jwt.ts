@@ -13,7 +13,7 @@ export function generateToken({ id, role }: JWTData) {
 export function verifyToken(token: string): JWTData | null {
   try {
     // Remover 'Bearer ' si está presente
-    const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token;
+    const cleanToken = token.startsWith("Bearer ") ? token.slice(7) : token;
     const decoded = jwt.verify(cleanToken, SECRET_KEY) as JwtPayload;
     return { id: decoded.id as string, role: decoded.role as string };
   } catch (err) {

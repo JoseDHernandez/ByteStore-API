@@ -7,7 +7,7 @@ services:
     container_name: api_gateway
     restart: always
     ports:
-      - "3000:80"
+      - "3000:3000"
     depends_on:
       - product-service
       - user-service
@@ -34,6 +34,7 @@ services:
       DATABASE_USER: root
       DATABASE_PASSWORD: APBjg7!RKa!P%t^NWd1y
       DATABASE_NAME: products
+      JWT_SECRET: "@y*&0a%K%7P0t@uQ^38HN$$y4Z^PK#0zE7dem700Bbf&pC6HF$$aU^ARkE@u$$nn"
     volumes:
       - ./product-service/src:/usr/src/app/src
       - /usr/src/app/node_modules
@@ -51,6 +52,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: APBjg7!RKa!P%t^NWd1y
       MYSQL_DATABASE: products
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_spanish2_ci
     volumes:
       - product_data:/var/lib/mysql
       - ./product-service/init:/docker-entrypoint-initdb.d
@@ -92,6 +94,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: Dp%mdSM^7MDr3qSQ6Cas
       MYSQL_DATABASE: users
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_spanish2_ci
     volumes:
       - user_data:/var/lib/mysql
       - ./user-service/init:/docker-entrypoint-initdb.d
@@ -112,6 +115,7 @@ services:
     environment:
       PORT: 3003 # Puerto donde corre Express
       MONGO_URI: mongodb://cart-db:27017/cartdb
+      JWT_SECRET: "@y*&0a%K%7P0t@uQ^38HN$$y4Z^PK#0zE7dem700Bbf&pC6HF$$aU^ARkE@u$$nn"
     volumes:
       - ./cart-service/src:/usr/src/app/src
       - /usr/src/app/node_modules
@@ -143,14 +147,14 @@ services:
     ports:
       - "3004:3004"
     environment:
-      DB_HOST: mysql_orders
+      DB_HOST: orders-db
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: password
       DB_NAME: orders_db
       PORT: 3004
       NODE_ENV: development
-      JWT_SECRET: orders_jwt_secret_muy_seguro_2024
+      JWT_SECRET: "@y*&0a%K%7P0t@uQ^38HN$$y4Z^PK#0zE7dem700Bbf&pC6HF$$aU^ARkE@u$$nn"
       JWT_EXPIRES_IN: 30d
       CORS_ORIGIN: http://localhost:3000,http://localhost:8080
     volumes:
@@ -188,14 +192,14 @@ services:
     ports:
       - "3005:3005"
     environment:
-      DB_HOST: mysql_reviews
+      DB_HOST: reviews-db
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: password
       DB_NAME: reviews_db
       PORT: 3005
       NODE_ENV: development
-      JWT_SECRET: reviews_jwt_secret_muy_seguro_2024
+      JWT_SECRET: "@y*&0a%K%7P0t@uQ^38HN$$y4Z^PK#0zE7dem700Bbf&pC6HF$$aU^ARkE@u$$nn"
       JWT_EXPIRES_IN: 30d
       CORS_ORIGIN: http://localhost:3000,http://localhost:8080
     volumes:

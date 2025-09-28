@@ -1,5 +1,5 @@
 import express from "express";
-import reviewsRoutes from "./routes/reviews.routes";
+import reviewsRoutes from "./routes/reviews.routes.ts";
 import dotenv from "dotenv";
 import morgan from "morgan";
 

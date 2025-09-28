@@ -1,12 +1,12 @@
-import { Router } from 'express';
+import { Router } from "express";
 import {
   createReview,
   getReviews,
   getReviewById,
   updateReview,
   deleteReview,
-} from '../controllers/reviews.controller.js';
-import { authMiddleware, canAccessResource } from '../middleware/auth.js';
+} from "../controllers/reviews.controller.ts";
+import { authMiddleware, canAccessResource } from "../middleware/auth.ts";
 
 const router = Router();
 
