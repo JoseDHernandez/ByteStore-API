@@ -1,342 +1,227 @@
-# Review Service - ByteStore API
+# Reviews Service - ByteStore API
 
-Servicio de calificaciones y reseñas para la plataforma ByteStore. Permite a los usuarios crear, leer, actualizar y eliminar reseñas de productos.
+Servicio de reseñas/calificaciones para la plataforma ByteStore. Este microservicio maneja las operaciones CRUD para reviews de productos.
 
-## 🚀 Características
+## Características
 
-- ✅ Autenticación JWT con secreto personalizado
-- ✅ Autorización basada en roles (usuario/admin)
-- ✅ CRUD completo para reseñas
-- ✅ Filtrado y ordenamiento avanzado
-- ✅ Validación de datos con Zod
-- ✅ Prevención de reseñas duplicadas por usuario/producto
-- ✅ Estadísticas de calificaciones por producto
-- ✅ Compatibilidad con fechas ISO
-- ✅ Preparado para Docker
+- ✅ Autenticación JWT con validación de roles
+- ✅ CRUD completo para reviews/calificaciones
+- ✅ Paginación con estructura estándar
+- ✅ Ordenamiento por fecha y calificación
+- ✅ Validaciones con Zod
+- ✅ Control de permisos (propietario/admin)
+- ✅ Base de datos MySQL con transacciones
+- ✅ Formato ISO para fechas
 
-## 📋 Requisitos
+## Tecnologías
 
-- Node.js 18+
-- MySQL 8.0+
-- TypeScript 5+
+- **Node.js** con **TypeScript**
+- **Express.js** para el servidor web
+- **MySQL2** para base de datos
+- **JWT** para autenticación
+- **Zod** para validaciones
+- **Morgan** para logging
 
-## 🛠️ Instalación
+## Instalación
 
-```bash
-# Instalar dependencias
-npm install
+1. Clonar el repositorio
+2. Instalar dependencias:
+   ```bash
+   npm install
+   ```
 
-# Configurar base de datos
-mysql -u root -p < database/init.sql
+3. Configurar variables de entorno:
+   ```bash
+   cp .env.example .env
+   ```
+   Editar `.env` con tus configuraciones.
 
-# Configurar variables de entorno
-cp .env.example .env
+4. Configurar la base de datos:
+   - Crear la base de datos MySQL
+   - Ejecutar el script `init/data.sql` para crear las tablas y datos de prueba
 
-# Ejecutar en desarrollo
-npm run dev
+5. Ejecutar en desarrollo:
+   ```bash
+   npm run dev
+   ```
 
-# Compilar para producción
-npm run build
-npm start
-```
+6. Compilar para producción:
+   ```bash
+   npm run build
+   npm start
+   ```
 
-## 🔧 Configuración
+## Variables de Entorno
 
-### Variables de Entorno (.env)
+| Variable | Descripción | Ejemplo |
+|----------|-------------|----------|
+| `PORT` | Puerto del servidor | `3003` |
+| `DB_HOST` | Host de MySQL | `localhost` |
+| `DB_PORT` | Puerto de MySQL | `3306` |
+| `DB_USER` | Usuario de MySQL | `root` |
+| `DB_PASSWORD` | Contraseña de MySQL | `password` |
+| `DB_NAME` | Nombre de la base de datos | `bytestore_reviews` |
+| `JWT_SECRET` | Secreto para JWT | `@y*&0a%K%7P0t@uQ^38HN$y4Z^PK#0zE7dem700Bbf&pC6HF$aU^ARkE@u$nn` |
+| `JWT_EXPIRES_IN` | Duración del token | `30d` |
 
-```env
-PORT=3003
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=bytestore_reviews
-JWT_SECRET=@y*&0a%K%7P0t@uQ^38HN$y4Z^PK#0zE7dem700Bbf&pC6HF$aU^ARkE@u$nn
-NODE_ENV=development
-```
+## API Endpoints
 
-## 📚 API Endpoints
+### Reviews/Calificaciones
 
-### Autenticación
-
-Todos los endpoints que requieren autenticación deben incluir el header:
-```
-Authorization: Bearer <JWT_TOKEN>
-```
-
-### 1. Crear Reseña
-
-**POST** `/api/reviews`
-
-**Autenticación:** Requerida
-
-**Body:**
-```json
-{
-  "productId": "550e8400-e29b-41d4-a716-446655440020",
-  "rating": 5,
-  "comment": "Excelente producto, muy recomendado"
-}
-```
-
-**Respuesta (201):**
-```json
-{
-  "message": "Reseña creada exitosamente",
-  "data": {
-    "id": "550e8400-e29b-41d4-a716-446655440001",
-    "userId": "550e8400-e29b-41d4-a716-446655440010",
-    "productId": "550e8400-e29b-41d4-a716-446655440020",
-    "rating": 5,
-    "comment": "Excelente producto, muy recomendado",
-    "createdAt": "2024-01-15T10:30:00.000Z",
-    "updatedAt": "2024-01-15T10:30:00.000Z"
-  }
-}
-```
-
-### 2. Obtener Todas las Reseñas
-
-**GET** `/api/reviews`
-
-**Autenticación:** No requerida
+#### `GET /reviews`
+Obtiene reviews paginadas con filtros y ordenamiento.
 
 **Query Parameters:**
-- `productId` (opcional): Filtrar por producto
-- `userId` (opcional): Filtrar por usuario
-- `sortBy` (opcional): `date` | `rating` (default: `date`)
-- `sortOrder` (opcional): `asc` | `desc` (default: `desc`)
-- `limit` (opcional): 1-100 (default: 10)
-- `offset` (opcional): ≥0 (default: 0)
+- `page` (number): Página actual (default: 1)
+- `limit` (number): Elementos por página (default: 10, max: 100)
+- `producto_id` (number): Filtrar por producto
+- `user_id` (number): Filtrar por usuario (solo admin)
+- `calificacion` (number): Filtrar por calificación (1-5)
+- `fecha_desde` (string): Fecha desde (ISO format)
+- `fecha_hasta` (string): Fecha hasta (ISO format)
+- `sort` (string): Campo de ordenamiento (`fecha_creacion`, `calificacion`)
+- `order` (string): Dirección (`asc`, `desc`)
 
-**Ejemplo:**
-```
-GET /api/reviews?sortBy=rating&sortOrder=desc&limit=5
-```
-
-**Respuesta (200):**
+**Response:**
 ```json
 {
-  "message": "Reseñas obtenidas exitosamente",
+  "total": 51,
+  "pages": 3,
+  "first": 1,
+  "next": 2,
+  "prev": null,
   "data": [
     {
-      "id": "550e8400-e29b-41d4-a716-446655440001",
-      "userId": "550e8400-e29b-41d4-a716-446655440010",
-      "productId": "550e8400-e29b-41d4-a716-446655440020",
-      "rating": 5,
-      "comment": "Excelente producto",
-      "createdAt": "2024-01-15T10:30:00.000Z",
-      "updatedAt": "2024-01-15T10:30:00.000Z"
+      "calificacion_id": 1,
+      "user_id": 1,
+      "producto_id": 1,
+      "calificacion": 5,
+      "comentario": "Excelente producto",
+      "fecha_creacion": "2024-01-15T10:30:00.000Z"
     }
-  ],
-  "pagination": {
-    "limit": 10,
-    "offset": 0
-  }
+  ]
 }
 ```
 
-### 3. Obtener Reseña por ID
-
-**GET** `/api/reviews/:id`
-
-**Autenticación:** No requerida
-
-**Respuesta (200):**
-```json
-{
-  "message": "Reseña obtenida exitosamente",
-  "data": {
-    "id": "550e8400-e29b-41d4-a716-446655440001",
-    "userId": "550e8400-e29b-41d4-a716-446655440010",
-    "productId": "550e8400-e29b-41d4-a716-446655440020",
-    "rating": 5,
-    "comment": "Excelente producto",
-    "createdAt": "2024-01-15T10:30:00.000Z",
-    "updatedAt": "2024-01-15T10:30:00.000Z"
-  }
-}
-```
-
-### 4. Obtener Reseñas por Producto
-
-**GET** `/api/reviews/product/:productId`
-
-**Autenticación:** No requerida
-
-**Respuesta (200):**
-```json
-{
-  "message": "Reseñas del producto obtenidas exitosamente",
-  "data": [...],
-  "statistics": {
-    "averageRating": 4.2,
-    "totalReviews": 15
-  },
-  "pagination": {
-    "limit": 10,
-    "offset": 0
-  }
-}
-```
-
-### 5. Obtener Reseñas por Usuario
-
-**GET** `/api/reviews/user/:userId`
-
-**Autenticación:** Requerida (solo propietario o admin)
-
-**Respuesta (200):**
-```json
-{
-  "message": "Reseñas del usuario obtenidas exitosamente",
-  "data": [...],
-  "pagination": {
-    "limit": 10,
-    "offset": 0
-  }
-}
-```
-
-### 6. Actualizar Reseña
-
-**PUT** `/api/reviews/:id`
-
-**Autenticación:** Requerida (solo propietario o admin)
+#### `POST /reviews`
+Crea una nueva review.
 
 **Body:**
 ```json
 {
-  "rating": 4,
-  "comment": "Actualización del comentario"
+  "producto_id": 1,
+  "calificacion": 5,
+  "comentario": "Excelente producto, muy recomendado"
 }
 ```
 
-**Respuesta (200):**
+#### `GET /reviews/:id`
+Obtiene una review por ID.
+
+#### `PUT /reviews/:id`
+Actualiza una review (solo propietario o admin).
+
+**Body:**
 ```json
 {
-  "message": "Reseña actualizada exitosamente",
-  "data": {
-    "id": "550e8400-e29b-41d4-a716-446655440001",
-    "userId": "550e8400-e29b-41d4-a716-446655440010",
-    "productId": "550e8400-e29b-41d4-a716-446655440020",
-    "rating": 4,
-    "comment": "Actualización del comentario",
-    "createdAt": "2024-01-15T10:30:00.000Z",
-    "updatedAt": "2024-01-15T11:45:00.000Z"
-  }
+  "calificacion": 4,
+  "comentario": "Buen producto, actualizo mi review"
 }
 ```
 
-### 7. Eliminar Reseña
+#### `DELETE /reviews/:id`
+Elimina una review (solo propietario o admin).
 
-**DELETE** `/api/reviews/:id`
 
-**Autenticación:** Requerida (solo propietario o admin)
 
-**Respuesta (200):**
-```json
-{
-  "message": "Reseña eliminada exitosamente"
-}
+## Autenticación
+
+Todas las rutas requieren autenticación JWT. El token debe enviarse en el header:
+
+```
+Authorization: Bearer <token>
 ```
 
-## 🔒 Autorización
+### Roles y Permisos
 
-### Reglas de Acceso
+- **Usuario normal**: Puede crear, ver y editar sus propias reviews y órdenes
+- **Administrador**: Puede realizar todas las operaciones sobre cualquier recurso
 
-1. **Crear reseña:** Usuario autenticado
-2. **Leer reseñas:** Público (excepto reseñas por usuario)
-3. **Actualizar reseña:** Solo propietario o admin
-4. **Eliminar reseña:** Solo propietario o admin
-5. **Ver reseñas de usuario:** Solo propietario o admin
+## Estructura de la Base de Datos
 
-### Roles de Usuario
+### Tabla `calificaciones`
+- `calificacion_id` (PK, AUTO_INCREMENT)
+- `user_id` (FK)
+- `producto_id`
+- `calificacion` (1-5)
+- `comentario` (TEXT)
+- `fecha_creacion` (DATETIME)
 
-- **Usuario regular:** Puede gestionar solo sus propias reseñas
-- **Administrador:** Puede gestionar cualquier reseña
+### Tabla `ordenes`
+- `orden_id` (PK, AUTO_INCREMENT)
+- `user_id` (FK)
+- `correo_usuario`
+- `direccion`
+- `nombre_completo`
+- `estado` (ENUM)
+- `total` (DECIMAL)
+- `fecha_pago` (DATETIME)
+- `fecha_entrega` (DATETIME)
 
-## 📊 Códigos de Estado HTTP
+### Tabla `orden_productos`
+- `orden_producto_id` (PK, AUTO_INCREMENT)
+- `orden_id` (FK)
+- `producto_id`
+- `nombre`, `precio`, `descuento`, `marca`, `modelo`, `cantidad`, `imagen`
 
-- **200:** Operación exitosa
-- **201:** Recurso creado exitosamente
-- **400:** Datos inválidos o parámetros incorrectos
-- **401:** Token requerido o inválido
-- **403:** Acceso denegado (permisos insuficientes)
-- **404:** Recurso no encontrado
-- **409:** Conflicto (ej: reseña duplicada)
-- **500:** Error interno del servidor
+## Códigos de Estado HTTP
 
-## 🗄️ Estructura de Base de Datos
+- `200` - OK (operación exitosa)
+- `201` - Created (recurso creado)
+- `400` - Bad Request (datos inválidos)
+- `401` - Unauthorized (no autenticado)
+- `403` - Forbidden (sin permisos)
+- `404` - Not Found (recurso no encontrado)
+- `500` - Internal Server Error (error del servidor)
 
-### Tabla: reviews
+## Desarrollo
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | VARCHAR(36) | UUID único de la reseña |
-| userId | VARCHAR(36) | UUID del usuario que creó la reseña |
-| productId | VARCHAR(36) | UUID del producto reseñado |
-| rating | INT | Calificación de 1 a 5 estrellas |
-| comment | TEXT | Comentario de la reseña |
-| createdAt | DATETIME | Fecha de creación (ISO) |
-| updatedAt | DATETIME | Fecha de última actualización (ISO) |
+### Estructura del Proyecto
 
-### Índices
-
-- `idx_product_id`: Optimiza consultas por producto
-- `idx_user_id`: Optimiza consultas por usuario
-- `idx_created_at`: Optimiza ordenamiento por fecha
-- `idx_rating`: Optimiza ordenamiento por calificación
-- `idx_user_product`: Previene reseñas duplicadas (UNIQUE)
-
-## 🐳 Docker
-
-El servicio está preparado para ejecutarse en Docker. La configuración se incluirá en el `docker-compose.dev.yml` del proyecto principal.
-
-## 🧪 Validaciones
-
-### Crear/Actualizar Reseña
-
-- **productId:** UUID válido (requerido para crear)
-- **rating:** Entero entre 1 y 5 (requerido para crear)
-- **comment:** String de 1-1000 caracteres (requerido para crear)
-
-### Query Parameters
-
-- **limit:** Entero entre 1 y 100
-- **offset:** Entero ≥ 0
-- **sortBy:** 'date' o 'rating'
-- **sortOrder:** 'asc' o 'desc'
-
-## 🔧 Tecnologías Utilizadas
-
-- **Express.js:** Framework web
-- **TypeScript:** Tipado estático
-- **MySQL2:** Driver de base de datos
-- **Zod:** Validación de esquemas
-- **JWT:** Autenticación
-- **Morgan:** Logging de requests
-- **UUID:** Generación de identificadores únicos
-
-## 📝 Notas de Desarrollo
-
-- El JWT tiene una duración de 30 días
-- Las fechas se almacenan en formato ISO
-- Se previenen reseñas duplicadas por usuario/producto
-- El servicio incluye CORS básico para desarrollo
-- Logging completo de requests para debugging
-
-## 🚀 Health Check
-
-**GET** `/health`
-
-Endpoint para verificar el estado del servicio:
-
-```json
-{
-  "service": "review-service",
-  "status": "healthy",
-  "timestamp": "2024-01-15T10:30:00.000Z",
-  "version": "1.0.0"
-}
 ```
+src/
+├── controllers/     # Controladores de las rutas
+├── middleware/      # Middleware de autenticación
+├── routes/         # Definición de rutas
+├── schemas/        # Validaciones Zod
+├── types/          # Tipos TypeScript
+├── utils/          # Utilidades (JWT)
+├── db.ts           # Configuración de base de datos
+└── index.ts        # Punto de entrada
+```
+
+### Scripts Disponibles
+
+- `npm run dev` - Ejecutar en modo desarrollo con recarga automática
+- `npm run build` - Compilar TypeScript a JavaScript
+- `npm start` - Ejecutar versión compilada
+
+## Docker
+
+Para ejecutar con Docker:
+
+```bash
+# Construir imagen
+docker build -t reviews-service .
+
+# Ejecutar contenedor
+docker run -p 3003:3003 --env-file .env reviews-service
+```
+
+## Notas Importantes
+
+- Las fechas se manejan en formato ISO 8601
+- La paginación sigue la estructura estándar especificada
+- Los precios se almacenan como DECIMAL para precisión
+- Las transacciones garantizan consistencia en operaciones complejas
+- El middleware de autenticación valida tanto la existencia del token como del usuario

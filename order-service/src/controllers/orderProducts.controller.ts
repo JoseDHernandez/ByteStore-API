@@ -7,9 +7,9 @@ import { z } from 'zod';
 const addProductSchema = z.object({
   producto_id: z.number().int().positive(),
   cantidad: z.number().int().positive(),
-  precio: z.number().positive().optional(),
+  precio: z.number().positive(),
+  nombre: z.string().min(1).max(300),
   descuento: z.number().min(0).max(100).optional(),
-  nombre: z.string().min(1).max(300).optional(),
   marca: z.string().min(1).max(100).optional(),
   modelo: z.string().min(1).max(100).optional(),
   imagen: z.string().url().optional(),

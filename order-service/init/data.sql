@@ -90,32 +90,62 @@ CREATE TABLE IF NOT EXISTS order_status_history (
 -- DATOS DE EJEMPLO PARA TESTING
 -- =====================================================
 
--- Insertar órdenes de ejemplo
+-- Insertar órdenes de ejemplo usando usuarios reales y productos del product-service
 INSERT INTO orders (user_id, correo_usuario, direccion, nombre_completo, estado, total, fecha_entrega) VALUES
-('user_001', 'juan.perez@email.com', 'Calle 123 #45-67, Bogotá, Colombia', 'Juan Pérez García', 'entregado', 2850000.00, '2024-01-15 14:30:00'),
-('user_002', 'maria.rodriguez@email.com', 'Carrera 15 #28-45, Medellín, Colombia', 'María Rodríguez López', 'enviado', 1200000.00, '2024-01-20 10:00:00'),
-('user_003', 'carlos.martinez@email.com', 'Avenida 68 #125-30, Cali, Colombia', 'Carlos Martínez Silva', 'procesando', 3500000.00, NULL),
-('user_001', 'juan.perez@email.com', 'Calle 123 #45-67, Bogotá, Colombia', 'Juan Pérez García', 'pendiente', 850000.00, NULL),
-('user_004', 'ana.gonzalez@email.com', 'Calle 50 #12-34, Barranquilla, Colombia', 'Ana González Ruiz', 'cancelado', 0.00, NULL);
+-- Órdenes entregadas
+('01991c11-412e-7569-bb85-a4f77ba08bb7', 'maria.lopez@gmail.com', 'Carrera 45 #23-12, Medellín, Colombia', 'María Fernanda López García', 'entregado', 3134550.00, '2024-01-15 14:30:00'),
+('cliente-002-uuid-7890-123456789012', 'carlos.martinez@hotmail.com', 'Avenida 68 #125-30, Cali, Colombia', 'Carlos Eduardo Martínez Silva', 'entregado', 3799000.00, '2024-01-18 16:45:00'),
+('cliente-005-uuid-9012-345678901234', 'valentina.torres@gmail.com', 'Calle 85 #47-23, Bogotá, Colombia', 'Valentina Isabel Torres Moreno', 'entregado', 4699000.00, '2024-01-22 11:20:00'),
 
--- Insertar productos de las órdenes
+-- Órdenes enviadas
+('cliente-003-uuid-3456-789012345678', 'alejandra.rodriguez@yahoo.com', 'Calle 50 #12-34, Barranquilla, Colombia', 'Alejandra Sofía Rodríguez Peña', 'enviado', 5899000.00, '2024-01-25 10:00:00'),
+('cliente-007-uuid-5678-901234567890', 'isabella.herrera@hotmail.com', 'Carrera 11 #93-45, Medellín, Colombia', 'Isabella María Herrera Castro', 'enviado', 4099000.00, '2024-01-26 15:30:00'),
+
+-- Órdenes en procesamiento
+('cliente-004-uuid-6789-012345678901', 'diego.gonzalez@outlook.com', 'Carrera 15 #28-45, Bucaramanga, Colombia', 'Diego Andrés González Vargas', 'procesando', 4499000.00, NULL),
+('cliente-006-uuid-2345-678901234567', 'sebastian.jimenez@gmail.com', 'Avenida 19 #104-62, Bogotá, Colombia', 'Sebastián Camilo Jiménez Rojas', 'procesando', 3999000.00, NULL),
+
+-- Órdenes pendientes
+('cliente-008-uuid-8901-234567890123', 'mateo.vasquez@yahoo.com', 'Calle 127 #15-78, Bogotá, Colombia', 'Mateo Alejandro Vásquez Luna', 'pendiente', 3269000.00, NULL),
+('01991c11-412e-7569-bb85-a4f77ba08bb7', 'maria.lopez@gmail.com', 'Carrera 45 #23-12, Medellín, Colombia', 'María Fernanda López García', 'pendiente', 7598000.00, NULL),
+
+-- Órdenes canceladas
+('cliente-002-uuid-7890-123456789012', 'carlos.martinez@hotmail.com', 'Avenida 68 #125-30, Cali, Colombia', 'Carlos Eduardo Martínez Silva', 'cancelado', 0.00, NULL),
+('cliente-003-uuid-3456-789012345678', 'alejandra.rodriguez@yahoo.com', 'Calle 50 #12-34, Barranquilla, Colombia', 'Alejandra Sofía Rodríguez Peña', 'cancelado', 0.00, NULL);
+
+-- Insertar productos de las órdenes usando productos reales del product-service
 INSERT INTO order_products (orden_id, producto_id, nombre, precio, descuento, marca, modelo, cantidad, imagen) VALUES
--- Orden 1: Laptop y mouse
-(1, 101, 'Laptop Gaming ASUS ROG', 2500000.00, 5.00, 'ASUS', 'ROG Strix G15', 1, 'https://example.com/images/laptop-asus-rog.jpg'),
-(1, 102, 'Mouse Gaming Logitech', 350000.00, 0.00, 'Logitech', 'G502 Hero', 1, 'https://example.com/images/mouse-logitech.jpg'),
+-- Orden 1: María - HP Intel Core I3 + descuento
+(1, 1, 'HP Intel Core I3 - 8GB', 3299000.00, 54.00, 'HP', '15-fd0026la', 1, '198122843657-001-750Wx750H.webp'),
 
--- Orden 2: Smartphone
-(2, 201, 'Smartphone Samsung Galaxy', 1200000.00, 0.00, 'Samsung', 'Galaxy A54', 1, 'https://example.com/images/samsung-galaxy.jpg'),
+-- Orden 2: Carlos - ASUS Vivobook (sin descuento para mostrar precio completo)
+(2, 9, 'ASUS Vivobook Intel Core I5 - 16GB', 3799000.00, 0.00, 'ASUS', 'X1605VA-MB1193W', 1, '4711387799109-001-750Wx750H.webp'),
 
--- Orden 3: Setup completo
-(3, 301, 'Monitor 4K LG', 1800000.00, 10.00, 'LG', '27UP850-W', 1, 'https://example.com/images/monitor-lg-4k.jpg'),
-(3, 302, 'Teclado Mecánico Corsair', 450000.00, 0.00, 'Corsair', 'K95 RGB Platinum', 1, 'https://example.com/images/teclado-corsair.jpg'),
-(3, 303, 'Auriculares HyperX', 350000.00, 15.00, 'HyperX', 'Cloud II', 1, 'https://example.com/images/auriculares-hyperx.jpg'),
-(3, 304, 'Webcam Logitech', 280000.00, 0.00, 'Logitech', 'C920 HD Pro', 1, 'https://example.com/images/webcam-logitech.jpg'),
-(3, 305, 'Mousepad Gaming', 80000.00, 0.00, 'SteelSeries', 'QcK Heavy', 2, 'https://example.com/images/mousepad-steelseries.jpg'),
+-- Orden 3: Valentina - ASUS Vivobook AMD R7 (con descuento)
+(3, 6, 'ASUS Vivobook AMD R7 - 16GB', 4699000.00, 48.00, 'ASUS', 'M1405YA-LY293W', 1, '4711636049719-003-750Wx750H.webp'),
 
--- Orden 4: Tablet
-(4, 401, 'Tablet iPad Air', 850000.00, 0.00, 'Apple', 'iPad Air 5ta Gen', 1, 'https://example.com/images/ipad-air.jpg');
+-- Orden 4: Alejandra - ASUS TUF Gaming (producto premium)
+(4, 5, 'ASUS TUF Intel Core I5 - 16GB', 5899000.00, 40.00, 'ASUS', 'FX607VJ-RL165W', 1, '4711636030427-001-750Wx750H.webp'),
+
+-- Orden 5: Isabella - LENOVO IdeaPad AMD R7
+(5, 10, 'LENOVO IdeaPad AMD R7 - 16GB', 4099000.00, 48.00, 'LENOVO', '82XM00W0LM', 1, '198157260429-001-750Wx750H.webp'),
+
+-- Orden 6: Diego - HP Pavilion (producto convertible)
+(6, 11, 'HP Pavilion Intel Core I5 - 8GB', 4499000.00, 50.00, 'HP', '14-ek1011la', 1, '198990192536-001-750Wx750H.webp'),
+
+-- Orden 7: Sebastián - HP Intel Core I5 (producto popular)
+(7, 8, 'HP Intel Core I5 - 8GB', 3999000.00, 45.00, 'HP', '14-Ep1001la', 1, '198415103550-001-750Wx750H.webp'),
+
+-- Orden 8: Mateo - ASUS Vivobook Intel Core I3 (producto económico)
+(8, 12, 'ASUS Vivobook Intel Core I3 - 8GB', 3269000.00, 51.00, 'ASUS', 'E1504GA-NJ531W', 1, '4711387562987-003-750Wx750H.webp'),
+
+-- Orden 9: María (segunda compra) - Combo de productos
+(9, 3, 'HP Intel Core I5 - 16GB', 4999000.00, 50.00, 'HP', '15-fd1255la', 1, '199251256417-003-750Wx750H.webp'),
+(9, 13, 'ASUS Vivobook Intel Core I5 - 8GB', 3799000.00, 47.00, 'ASUS', 'X1605VA-MB1625W', 1, '4711387805114-001-750Wx750H.webp'),
+
+-- Órdenes canceladas (productos que estaban en el carrito pero se cancelaron)
+(10, 4, 'HP AMD R7 - 16GB', 4599000.00, 48.00, 'HP', '15-fc0276la', 1, '198990787145-001-750Wx750H.webp'),
+(11, 2, 'Lenovo AMD R5 - 24GB', 3999000.00, 40.00, 'LENOVO', '83KA001NLM', 1, '198155958762-001-750Wx750H.webp');
 
 -- =====================================================
 -- VISTAS ÚTILES PARA CONSULTAS

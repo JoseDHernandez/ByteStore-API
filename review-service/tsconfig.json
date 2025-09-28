@@ -1,22 +1,24 @@
 {
-  "extends": "@tsconfig/node-lts/tsconfig.json",
   "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "node",
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true,
-    "typeRoots": ["./src/types", "./node_modules/@types"],
-    "module": "ESNext",
-    "target": "ES2022",
-    "moduleResolution": "node"
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"],
-  "ts-node": {
-    "esm": true
-  }
+  "exclude": ["node_modules", "dist"]
 }
