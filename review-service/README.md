@@ -15,7 +15,6 @@
 - [🗄️ Estructura de la Base de Datos](#️-estructura-de-la-base-de-datos)
 - [🚨 Códigos de Estado HTTP](#-códigos-de-estado-http)
 - [📁 Estructura del Proyecto](#-estructura-del-proyecto)
-- [🔧 Scripts Disponibles](#-scripts-disponibles)
 - [🐳 Docker](#-docker)
 - [📝 Notas Importantes](#-notas-importantes)
 - [🤝 Contribución](#-contribución)
@@ -309,15 +308,6 @@ review-service/
 ├── tsconfig.json
 └── README.md
 ```
-
-## 🔧 Scripts Disponibles
-
-- `npm run dev` - Ejecutar en modo desarrollo con recarga automática
-- `npm run build` - Compilar TypeScript a JavaScript
-- `npm start` - Ejecutar versión compilada
-- `npm test` - Ejecutar tests
-- `npm run lint` - Verificar código
-- `npm run lint:fix` - Corregir errores de linting
 
 ## 🐳 Docker
 
