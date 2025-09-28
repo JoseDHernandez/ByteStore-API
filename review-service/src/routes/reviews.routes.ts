@@ -10,22 +10,19 @@ import { authMiddleware, canAccessResource } from '../middleware/auth.js';
 
 const router = Router();
 
-// Todas las rutas requieren autenticación
-router.use(authMiddleware);
-
-// GET / - Obtener reviews paginadas
+// GET / - Obtener reviews paginadas (acceso público)
 router.get('/', getReviews);
 
-// POST / - Crear nueva review
-router.post('/', createReview);
+// POST / - Crear nueva review (requiere autenticación)
+router.post('/', authMiddleware, createReview);
 
-// GET /:id - Obtener review por ID
+// GET /:id - Obtener review por ID (acceso público)
 router.get('/:id', getReviewById);
 
 // PUT /:id - Actualizar review (solo propietario o admin)
-router.put('/:id', canAccessResource, updateReview);
+router.put('/:id', authMiddleware, canAccessResource, updateReview);
 
 // DELETE /:id - Eliminar review (solo propietario o admin)
-router.delete('/:id', canAccessResource, deleteReview);
+router.delete('/:id', authMiddleware, canAccessResource, deleteReview);
 
 export default router;
