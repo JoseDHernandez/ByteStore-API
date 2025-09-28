@@ -1,6 +1,6 @@
-import type { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '../utils/jwt.js';
-import type { JWTData } from '../types/token.js';
+import type { Request, Response, NextFunction } from "express";
+import { verifyToken } from "../utils/jwt.ts";
+import type { JWTData } from "../types/token.ts";
 
 // Validar token JWT
 export async function authMiddleware(
@@ -11,14 +11,14 @@ export async function authMiddleware(
   // Obtener token del header Authorization
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    return res.status(401).json({ message: 'Token requerido' });
+    return res.status(401).json({ message: "Token requerido" });
   }
 
   // Decodificar token
   const decoded: JWTData | null = verifyToken(authHeader);
 
   if (!decoded) {
-    return res.status(401).json({ message: 'Token inválido o expirado' });
+    return res.status(401).json({ message: "Token inválido o expirado" });
   }
 
   try {
@@ -30,7 +30,7 @@ export async function authMiddleware(
     req.auth = decoded;
     next();
   } catch (error) {
-    return res.status(500).json({ message: 'Error del servidor', error });
+    return res.status(500).json({ message: "Error del servidor", error });
   }
 }
 
@@ -38,13 +38,13 @@ export async function authMiddleware(
 export async function isAdmin(req: Request, res: Response, next: NextFunction) {
   // Validar si existe validación del token
   if (!req.auth) {
-    return res.status(401).json({ message: 'No autorizado' });
+    return res.status(401).json({ message: "No autorizado" });
   }
 
   // Validar rol en el token
-  if (req.auth.role !== 'ADMINISTRADOR') {
+  if (req.auth.role !== "ADMINISTRADOR") {
     return res.status(403).json({
-      message: 'Acceso denegado. Se requieren permisos de administrador',
+      message: "Acceso denegado. Se requieren permisos de administrador",
     });
   }
 
@@ -58,17 +58,17 @@ export function canAccessResource(
   next: NextFunction
 ) {
   if (!req.auth) {
-    return res.status(401).json({ message: 'No autorizado' });
+    return res.status(401).json({ message: "No autorizado" });
   }
 
   const resourceUserId = req.params.userId || req.body.usuario_id;
   const isOwner = req.auth.id === resourceUserId;
-  const isAdminUser = req.auth.role === 'ADMINISTRADOR';
+  const isAdminUser = req.auth.role === "ADMINISTRADOR";
 
   if (!isOwner && !isAdminUser) {
     return res.status(403).json({
       message:
-        'Acceso denegado. Solo el propietario o un administrador pueden acceder a este recurso',
+        "Acceso denegado. Solo el propietario o un administrador pueden acceder a este recurso",
     });
   }
 

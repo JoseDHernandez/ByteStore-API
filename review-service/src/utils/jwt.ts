@@ -1,6 +1,5 @@
 import jwt from "jsonwebtoken";
-import type { JwtPayload } from "jsonwebtoken";
-import type { JWTData } from "..?/types/token.js.js";
+import type { JwtPayload, JWTData } from "jsonwebtoken";
 
 const SECRET_KEY =
   process.env.JWT_SECRET ||
@@ -13,7 +12,7 @@ export function generateToken({ id, role }: JWTData) {
 export function verifyToken(token: string): JWTData | null {
   try {
     // Remover 'Bearer ' si está presente
-    const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token;
+    const cleanToken = token.startsWith("Bearer ") ? token.slice(7) : token;
     const decoded = jwt.verify(cleanToken, SECRET_KEY) as JwtPayload;
     return { id: decoded.id as string, role: decoded.role as string };
   } catch (err) {

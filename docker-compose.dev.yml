@@ -147,7 +147,7 @@ services:
     ports:
       - "3004:3004"
     environment:
-      DB_HOST: mysql_orders
+      DB_HOST: orders-db
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: password
@@ -192,14 +192,14 @@ services:
     ports:
       - "3005:3005"
     environment:
-      DB_HOST: mysql_reviews
+      DB_HOST: reviews-db
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: password
       DB_NAME: reviews_db
       PORT: 3005
       NODE_ENV: development
-      JWT_SECRET: reviews_jwt_secret_muy_seguro_2024
+      JWT_SECRET: "@y*&0a%K%7P0t@uQ^38HN$$y4Z^PK#0zE7dem700Bbf&pC6HF$$aU^ARkE@u$$nn"
       JWT_EXPIRES_IN: 30d
       CORS_ORIGIN: http://localhost:3000,http://localhost:8080
     volumes:
