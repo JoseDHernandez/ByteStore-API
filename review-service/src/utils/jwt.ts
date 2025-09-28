@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
-import type { JwtPayload, JWTData } from "jsonwebtoken";
+import type { JwtPayload } from "jsonwebtoken";
+import type { JWTData } from "../types/token.js";
 
 const SECRET_KEY =
   process.env.JWT_SECRET ||
