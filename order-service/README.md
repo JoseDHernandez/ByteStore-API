@@ -1,5 +1,26 @@
 # 📦 Orders Service - ByteStore API
 
+## 📑 Índice
+
+- [🚀 Descripción](#-descripción)
+- [✨ Características Principales](#-características-principales)
+- [🛠️ Tecnologías Utilizadas](#️-tecnologías-utilizadas)
+- [📋 Prerrequisitos](#-prerrequisitos)
+- [🔧 Instalación](#-instalación)
+- [Variables de Entorno](#variables-de-entorno)
+- [🚀 Ejecución](#-ejecución)
+- [📚 Documentación de la API](#-documentación-de-la-api)
+  - [📋 Endpoints de Órdenes](#-endpoints-de-órdenes)
+  - [🔄 Endpoints de Estados](#-endpoints-de-estados)
+- [🔐 Estados de Órdenes](#-estados-de-órdenes)
+- [🗄️ Estructura de la Base de Datos](#️-estructura-de-la-base-de-datos)
+- [📁 Estructura del Proyecto](#-estructura-del-proyecto)
+- [🚨 Códigos de Error Comunes](#-códigos-de-error-comunes)
+- [🔒 Seguridad](#-seguridad)
+- [🤝 Contribución](#-contribución)
+- [📄 Licencia](#-licencia)
+- [📞 Soporte](#-soporte)
+
 ## 🚀 Descripción
 
 Microservicio dedicado a la gestión completa de órdenes para ByteStore. Proporciona funcionalidades avanzadas para el manejo del ciclo de vida de las órdenes, desde su creación hasta la entrega, incluyendo gestión de estados, productos y estadísticas.
@@ -48,6 +69,23 @@ npm install
 ### 3. Configurar variables de entorno
 Crea un archivo `.env` en la raíz del proyecto:
 
+## Variables de Entorno
+
+| Variable | Descripción | Valor por defecto |
+|----------|-------------|-------------------|
+| `PORT` | Puerto del servidor | `3004` |
+| `NODE_ENV` | Entorno de ejecución | `development` |
+| `DB_HOST` | Host de la base de datos MySQL | `localhost` |
+| `DB_PORT` | Puerto de la base de datos MySQL | `3306` |
+| `DB_USER` | Usuario de la base de datos | `root` |
+| `DB_PASSWORD` | Contraseña de la base de datos | `tu_password` |
+| `DB_NAME` | Nombre de la base de datos | `orders_db` |
+| `JWT_SECRET` | Clave secreta para firmar los tokens JWT | `@y*&0a%K%7P0t@uQ^38HN$y4Z^PK#0zE7dem700Bbf&pC6HF$aU^ARkE@u$nn` |
+| `JWT_EXPIRES_IN` | Duración del token JWT | `30d` |
+| `CORS_ORIGIN` | Orígenes permitidos para CORS | `http://localhost:3000` |
+
+### Ejemplo de archivo .env
+
 ```env
 # Configuración del servidor
 PORT=3004
@@ -61,7 +99,7 @@ DB_PASSWORD=tu_password
 DB_NAME=orders_db
 
 # Configuración JWT
-JWT_SECRET=tu_jwt_secret_muy_seguro
+JWT_SECRET=@y*&0a%K%7P0t@uQ^38HN$y4Z^PK#0zE7dem700Bbf&pC6HF$aU^ARkE@u$nn
 JWT_EXPIRES_IN=30d
 
 # Configuración CORS
@@ -109,10 +147,41 @@ npm start
 http://localhost:3004/api
 ```
 
-### Autenticación
-Todas las rutas (excepto health check) requieren autenticación JWT:
+### 🔐 Autenticación
+
+Este servicio utiliza **JSON Web Tokens (JWT)** para la autenticación y autorización.
+
+#### Obtener Token
+Para obtener un token JWT, debes autenticarte a través del servicio de usuarios:
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "usuario@ejemplo.com",
+  "password": "tu_password"
+}
 ```
-Authorization: Bearer <token>
+
+#### Usar Token en Requests
+Incluye el token en el header `Authorization` de todas las peticiones:
+```http
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+#### Roles y Permisos
+- **Usuario**: Puede crear, ver y actualizar sus propias órdenes
+- **Admin**: Acceso completo a todas las órdenes y funciones administrativas
+
+#### Ejemplo de Request Autenticado
+```javascript
+fetch('http://localhost:3004/api/orders', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer ' + token,
+    'Content-Type': 'application/json'
+  }
+})
 ```
 
 ### 📋 Endpoints de Órdenes
@@ -124,13 +193,18 @@ Content-Type: application/json
 Authorization: Bearer <token>
 
 {
+  "user_id": "01991c0e-16f0-707f-9f6f-3614666caead",
   "correo_usuario": "maria.lopez@test.com",
+  "direccion": "Calle 123 #45-67, Bogotá",
   "nombre_completo": "María López",
   "productos": [
     {
       "producto_id": 1,
-      "cantidad": 2,
-      "precio_unitario": 29.99
+      "cantidad": 2
+    },
+    {
+      "producto_id": 3,
+      "cantidad": 1
     }
   ]
 }
@@ -155,8 +229,9 @@ Content-Type: application/json
 Authorization: Bearer <token>
 
 {
-  "correo_usuario": "jose.hernandez@test.com",
-  "nombre_completo": "José Hernández"
+  "estado": "procesando",
+  "direccion": "Nueva dirección de entrega",
+  "fecha_entrega": "2024-12-25T10:00:00.000Z"
 }
 ```
 
@@ -209,45 +284,6 @@ GET /api/orders/status/stats
 Authorization: Bearer <token>
 ```
 
-### 🛍️ Endpoints de Productos en Órdenes
-
-#### Agregar Producto a Orden
-```http
-POST /api/orders/:id/products
-Content-Type: application/json
-Authorization: Bearer <token>
-
-{
-  "producto_id": 2,
-  "cantidad": 1,
-  "precio_unitario": 15.99
-}
-```
-
-#### Actualizar Producto en Orden
-```http
-PUT /api/orders/:orderId/products/:productId
-Content-Type: application/json
-Authorization: Bearer <token>
-
-{
-  "cantidad": 3,
-  "precio_unitario": 14.99
-}
-```
-
-#### Eliminar Producto de Orden
-```http
-DELETE /api/orders/:orderId/products/:productId
-Authorization: Bearer <token>
-```
-
-#### Obtener Productos de Orden
-```http
-GET /api/orders/:id/products
-Authorization: Bearer <token>
-```
-
 ## 🔐 Estados de Órdenes
 
 El sistema maneja los siguientes estados con transiciones controladas:
@@ -282,17 +318,6 @@ id (PK) | orden_id (FK) | producto_id | cantidad | precio_unitario | subtotal
 id (PK) | orden_id (FK) | estado_anterior | estado_nuevo | motivo | changed_by | changed_at
 ```
 
-## 🧪 Testing
-
-```bash
-# Ejecutar tests
-npm test
-
-# Linting
-npm run lint
-npm run lint:fix
-```
-
 ## 📁 Estructura del Proyecto
 
 ```
@@ -317,16 +342,6 @@ orders-service/
 ├── tsconfig.json
 └── README.md
 ```
-
-## 🔧 Scripts Disponibles
-
-- `npm run dev` - Ejecutar en modo desarrollo
-- `npm run build` - Compilar TypeScript
-- `npm start` - Ejecutar en producción
-- `npm test` - Ejecutar tests
-- `npm run lint` - Verificar código
-- `npm run lint:fix` - Corregir errores de linting
-- `npm run db:init` - Inicializar base de datos
 
 ## 🚨 Códigos de Error Comunes
 
@@ -353,16 +368,3 @@ orders-service/
 4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
 5. Abre un Pull Request
 
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
-
-## 📞 Soporte
-
-Para soporte técnico o preguntas:
-- Email: support@bytestore.com
-- Issues: [GitHub Issues](https://github.com/bytestore/api/issues)
-
----
-
-**ByteStore Orders Service** - Desarrollado con ❤️ por el equipo de ByteStore

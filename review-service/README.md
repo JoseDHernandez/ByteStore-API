@@ -1,77 +1,205 @@
-# Reviews Service - ByteStore API
+# 📝 Reviews Service - ByteStore API
 
-Servicio de reseñas/calificaciones para la plataforma ByteStore. Este microservicio maneja las operaciones CRUD para reviews de productos.
+## 📑 Índice
 
-## Características
+- [🚀 Descripción](#-descripción)
+- [✨ Características Principales](#-características-principales)
+- [🛠️ Tecnologías Utilizadas](#️-tecnologías-utilizadas)
+- [📋 Prerrequisitos](#-prerrequisitos)
+- [🔧 Instalación](#-instalación)
+- [Variables de Entorno](#variables-de-entorno)
+- [🚀 Ejecución](#-ejecución)
+- [📚 Documentación de la API](#-documentación-de-la-api)
+  - [🔐 Autenticación](#-autenticación)
+  - [📝 Endpoints de Reviews](#-endpoints-de-reviews)
+- [🗄️ Estructura de la Base de Datos](#️-estructura-de-la-base-de-datos)
+- [🚨 Códigos de Estado HTTP](#-códigos-de-estado-http)
+- [📁 Estructura del Proyecto](#-estructura-del-proyecto)
+- [🔧 Scripts Disponibles](#-scripts-disponibles)
+- [🐳 Docker](#-docker)
+- [📝 Notas Importantes](#-notas-importantes)
+- [🤝 Contribución](#-contribución)
+- [📄 Licencia](#-licencia)
 
-- ✅ Autenticación JWT con validación de roles
-- ✅ CRUD completo para reviews/calificaciones
-- ✅ Paginación con estructura estándar
-- ✅ Ordenamiento por fecha y calificación
-- ✅ Validaciones con Zod
-- ✅ Control de permisos (propietario/admin)
-- ✅ Base de datos MySQL con transacciones
-- ✅ Formato ISO para fechas
+## 🚀 Descripción
 
-## Tecnologías
+Microservicio especializado en la gestión de reseñas y calificaciones para la plataforma ByteStore. Proporciona un sistema completo de reviews con autenticación, validaciones robustas y control de permisos granular.
 
-- **Node.js** con **TypeScript**
-- **Express.js** para el servidor web
-- **MySQL2** para base de datos
-- **JWT** para autenticación
-- **Zod** para validaciones
-- **Morgan** para logging
+## ✨ Características Principales
 
-## Instalación
+- **Sistema de Calificaciones**: Reviews con puntuación de 1 a 5 estrellas
+- **Autenticación JWT**: Seguridad basada en tokens con validación de roles
+- **CRUD Completo**: Operaciones completas para reviews/calificaciones
+- **Paginación Avanzada**: Sistema de paginación con estructura estándar
+- **Filtros y Ordenamiento**: Búsqueda por producto, usuario, calificación y fechas
+- **Validaciones Robustas**: Esquemas Zod para validación de datos
+- **Control de Permisos**: Sistema de autorización propietario/admin
+- **Base de Datos MySQL**: Persistencia confiable con transacciones
+- **Formato ISO**: Manejo estándar de fechas
 
-1. Clonar el repositorio
-2. Instalar dependencias:
-   ```bash
-   npm install
-   ```
+## 🛠️ Tecnologías Utilizadas
 
-3. Configurar variables de entorno:
-   ```bash
-   cp .env.example .env
-   ```
-   Editar `.env` con tus configuraciones.
+- **Node.js** (v18+) - Runtime de JavaScript
+- **TypeScript** - Tipado estático
+- **Express.js** - Framework web
+- **MySQL2** - Driver de base de datos
+- **JWT** - Autenticación y autorización
+- **Zod** - Validación de esquemas
+- **Morgan** - Logging de requests
+- **CORS** - Manejo de políticas de origen cruzado
 
-4. Configurar la base de datos:
-   - Crear la base de datos MySQL
-   - Ejecutar el script `init/data.sql` para crear las tablas y datos de prueba
+## 📋 Prerrequisitos
 
-5. Ejecutar en desarrollo:
-   ```bash
-   npm run dev
-   ```
+- Node.js >= 18.0.0
+- npm >= 8.0.0
+- MySQL >= 8.0
+- Git
 
-6. Compilar para producción:
-   ```bash
-   npm run build
-   npm start
-   ```
+## 🔧 Instalación
+
+### 1. Clonar el repositorio
+
+```bash
+git clone <repository-url>
+cd ByteStore-API/review-service
+```
+
+### 2. Instalar dependencias
+
+```bash
+npm install
+```
+
+### 3. Configurar variables de entorno
+
+```bash
+cp .env.example .env
+```
+
+Editar `.env` con tus configuraciones.
+
+### 4. Configurar la base de datos
+
+- Crear la base de datos MySQL
+- Ejecutar el script `init/data.sql` para crear las tablas y datos de prueba
 
 ## Variables de Entorno
 
-| Variable | Descripción | Ejemplo |
-|----------|-------------|----------|
-| `PORT` | Puerto del servidor | `3005` |
-| `DB_HOST` | Host de MySQL | `localhost` |
-| `DB_PORT` | Puerto de MySQL | `3306` |
-| `DB_USER` | Usuario de MySQL | `root` |
-| `DB_PASSWORD` | Contraseña de MySQL | `password` |
-| `DB_NAME` | Nombre de la base de datos | `bytestore_reviews` |
-| `JWT_SECRET` | Secreto para JWT | `@y*&0a%K%7P0t@uQ^38HN$y4Z^PK#0zE7dem700Bbf&pC6HF$aU^ARkE@u$nn` |
-| `JWT_EXPIRES_IN` | Duración del token | `30d` |
+| Variable         | Descripción                              | Valor por defecto                                               |
+| ---------------- | ---------------------------------------- | --------------------------------------------------------------- |
+| `PORT`           | Puerto del servidor                      | `3005`                                                          |
+| `NODE_ENV`       | Entorno de ejecución                     | `development`                                                   |
+| `DB_HOST`        | Host de la base de datos MySQL           | `localhost`                                                     |
+| `DB_PORT`        | Puerto de la base de datos MySQL         | `3306`                                                          |
+| `DB_USER`        | Usuario de la base de datos              | `root`                                                          |
+| `DB_PASSWORD`    | Contraseña de la base de datos           | `password`                                                      |
+| `DB_NAME`        | Nombre de la base de datos               | `bytestore_reviews`                                             |
+| `JWT_SECRET`     | Clave secreta para firmar los tokens JWT | `@y*&0a%K%7P0t@uQ^38HN$y4Z^PK#0zE7dem700Bbf&pC6HF$aU^ARkE@u$nn` |
+| `JWT_EXPIRES_IN` | Duración del token JWT                   | `30d`                                                           |
 
-## API Endpoints
+### Ejemplo de archivo .env
 
-### Reviews/Calificaciones
+```env
+# Configuración del servidor
+PORT=3005
+NODE_ENV=development
 
-#### `GET /reviews`
-Obtiene reviews paginadas con filtros y ordenamiento.
+# Configuración de la base de datos
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=password
+DB_NAME=bytestore_reviews
+
+# Configuración JWT
+JWT_SECRET=@y*&0a%K%7P0t@uQ^38HN$y4Z^PK#0zE7dem700Bbf&pC6HF$aU^ARkE@u$nn
+JWT_EXPIRES_IN=30d
+```
+
+## 🚀 Ejecución
+
+### Desarrollo
+
+```bash
+npm run dev
+```
+
+El servidor se ejecutará en `http://localhost:3005` con recarga automática.
+
+### Producción
+
+```bash
+npm run build
+npm start
+```
+
+## 📚 Documentación de la API
+
+### Base URL
+
+```
+http://localhost:3005/api
+```
+
+### 🔐 Autenticación
+
+Este servicio utiliza **JSON Web Tokens (JWT)** para la autenticación y autorización.
+
+#### Obtener Token
+
+Para obtener un token JWT, debes autenticarte a través del servicio de usuarios:
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "usuario@ejemplo.com",
+  "password": "tu_password"
+}
+```
+
+#### Usar Token en Requests
+
+Incluye el token en el header `Authorization` de todas las peticiones protegidas:
+
+```http
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+#### Roles y Permisos
+
+- **Acceso Público**: Puede ver todas las reviews (GET /reviews, GET /reviews/:id)
+- **Usuario Autenticado**: Puede crear reviews (POST /reviews)
+- **Propietario o Admin**: Puede editar y eliminar sus propias reviews (PUT /reviews/:id, DELETE /reviews/:id)
+
+#### Ejemplo de Request Autenticado
+
+```javascript
+fetch('http://localhost:3005/api/reviews', {
+  method: 'POST',
+  headers: {
+    Authorization: 'Bearer ' + token,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    producto_id: 1,
+    calificacion: 5,
+    comentario: 'Excelente producto',
+  }),
+});
+```
+
+### 📝 Endpoints de Reviews
+
+#### Obtener Reviews
+
+```http
+GET /api/reviews?page=1&limit=10&producto_id=1&calificacion=5
+```
 
 **Query Parameters:**
+
 - `page` (number): Página actual (default: 1)
 - `limit` (number): Elementos por página (default: 10, max: 100)
 - `producto_id` (number): Filtrar por producto
@@ -83,6 +211,7 @@ Obtiene reviews paginadas con filtros y ordenamiento.
 - `order` (string): Dirección (`asc`, `desc`)
 
 **Response:**
+
 ```json
 {
   "total": 51,
@@ -103,11 +232,13 @@ Obtiene reviews paginadas con filtros y ordenamiento.
 }
 ```
 
-#### `POST /reviews`
-Crea una nueva review.
+#### Crear Review
 
-**Body:**
-```json
+```http
+POST /api/reviews
+Content-Type: application/json
+Authorization: Bearer <token>
+
 {
   "producto_id": 1,
   "calificacion": 5,
@@ -115,113 +246,104 @@ Crea una nueva review.
 }
 ```
 
-#### `GET /reviews/:id`
-Obtiene una review por ID.
+#### Obtener Review por ID
 
-#### `PUT /reviews/:id`
-Actualiza una review (solo propietario o admin).
+```http
+GET /api/reviews/:id
+```
 
-**Body:**
-```json
+#### Actualizar Review
+
+```http
+PUT /api/reviews/:id
+Content-Type: application/json
+Authorization: Bearer <token>
+
 {
   "calificacion": 4,
   "comentario": "Buen producto, actualizo mi review"
 }
 ```
 
-#### `DELETE /reviews/:id`
-Elimina una review (solo propietario o admin).
+#### Eliminar Review
 
-
-
-## Autenticación
-
-Todas las rutas requieren autenticación JWT. El token debe enviarse en el header:
-
-```
+```http
+DELETE /api/reviews/:id
 Authorization: Bearer <token>
 ```
 
-### Roles y Permisos
+## 🗄️ Estructura de la Base de Datos
 
-- **Usuario normal**: Puede crear, ver y editar sus propias reviews y órdenes
-- **Administrador**: Puede realizar todas las operaciones sobre cualquier recurso
+### Tabla: calificaciones
 
-## Estructura de la Base de Datos
-
-### Tabla `calificaciones`
-- `calificacion_id` (PK, AUTO_INCREMENT)
-- `user_id` (FK)
-- `producto_id`
-- `calificacion` (1-5)
-- `comentario` (TEXT)
-- `fecha_creacion` (DATETIME)
-
-### Tabla `ordenes`
-- `orden_id` (PK, AUTO_INCREMENT)
-- `user_id` (FK)
-- `correo_usuario`
-- `direccion`
-- `nombre_completo`
-- `estado` (ENUM)
-- `total` (DECIMAL)
-- `fecha_pago` (DATETIME)
-- `fecha_entrega` (DATETIME)
-
-### Tabla `orden_productos`
-- `orden_producto_id` (PK, AUTO_INCREMENT)
-- `orden_id` (FK)
-- `producto_id`
-- `nombre`, `precio`, `descuento`, `marca`, `modelo`, `cantidad`, `imagen`
-
-## Códigos de Estado HTTP
-
-- `200` - OK (operación exitosa)
-- `201` - Created (recurso creado)
-- `400` - Bad Request (datos inválidos)
-- `401` - Unauthorized (no autenticado)
-- `403` - Forbidden (sin permisos)
-- `404` - Not Found (recurso no encontrado)
-- `500` - Internal Server Error (error del servidor)
-
-## Desarrollo
-
-### Estructura del Proyecto
-
-```
-src/
-├── controllers/     # Controladores de las rutas
-├── middleware/      # Middleware de autenticación
-├── routes/         # Definición de rutas
-├── schemas/        # Validaciones Zod
-├── types/          # Tipos TypeScript
-├── utils/          # Utilidades (JWT)
-├── db.ts           # Configuración de base de datos
-└── index.ts        # Punto de entrada
+```sql
+calificacion_id (PK, AUTO_INCREMENT) | user_id (FK) | producto_id | calificacion (1-5) | comentario (TEXT) | fecha_creacion (DATETIME)
 ```
 
-### Scripts Disponibles
+## 🚨 Códigos de Estado HTTP
+
+- **200** - OK (operación exitosa)
+- **201** - Created (recurso creado)
+- **400** - Bad Request (datos inválidos)
+- **401** - Unauthorized (no autenticado)
+- **403** - Forbidden (sin permisos)
+- **404** - Not Found (recurso no encontrado)
+- **500** - Internal Server Error (error del servidor)
+
+## 📁 Estructura del Proyecto
+
+```
+review-service/
+├── src/
+│   ├── controllers/     # Controladores de las rutas
+│   ├── middleware/      # Middleware de autenticación
+│   ├── routes/         # Definición de rutas
+│   ├── schemas/        # Validaciones Zod
+│   ├── types/          # Tipos TypeScript
+│   ├── utils/          # Utilidades (JWT)
+│   ├── db.ts           # Configuración de base de datos
+│   └── index.ts        # Punto de entrada
+├── init/
+│   └── data.sql        # Script de inicialización
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+## 🔧 Scripts Disponibles
 
 - `npm run dev` - Ejecutar en modo desarrollo con recarga automática
 - `npm run build` - Compilar TypeScript a JavaScript
 - `npm start` - Ejecutar versión compilada
+- `npm test` - Ejecutar tests
+- `npm run lint` - Verificar código
+- `npm run lint:fix` - Corregir errores de linting
 
-## Docker
+## 🐳 Docker
 
 Para ejecutar con Docker:
 
 ```bash
 # Construir imagen
-docker build -t reviews-service .
+docker build -t review-service .
 
 # Ejecutar contenedor
-docker run -p 3005:3005 --env-file .env reviews-service
+docker run -p 3005:3005 --env-file .env review-service
 ```
 
-## Notas Importantes
+## 📝 Notas Importantes
 
 - Las fechas se manejan en formato ISO 8601
 - La paginación sigue la estructura estándar especificada
-- Los precios se almacenan como DECIMAL para precisión
+- Las calificaciones van de 1 a 5 estrellas
 - Las transacciones garantizan consistencia en operaciones complejas
 - El middleware de autenticación valida tanto la existencia del token como del usuario
+- Solo el propietario de una review o un admin puede modificarla o eliminarla
+
+## 🤝 Contribución
+
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Abre un Pull Request
