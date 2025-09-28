@@ -50,7 +50,7 @@ Crea un archivo `.env` en la raíz del proyecto:
 
 ```env
 # Configuración del servidor
-PORT=3001
+PORT=3004
 NODE_ENV=development
 
 # Configuración de la base de datos
@@ -62,7 +62,7 @@ DB_NAME=orders_db
 
 # Configuración JWT
 JWT_SECRET=tu_jwt_secret_muy_seguro
-JWT_EXPIRES_IN=24h
+JWT_EXPIRES_IN=30d
 
 # Configuración CORS
 CORS_ORIGIN=http://localhost:3000
@@ -95,7 +95,7 @@ npm run build
 ```bash
 npm run dev
 ```
-El servidor se ejecutará en `http://localhost:3001` con recarga automática.
+El servidor se ejecutará en `http://localhost:3004` con recarga automática.
 
 ### Producción
 ```bash
@@ -106,7 +106,7 @@ npm start
 
 ### Base URL
 ```
-http://localhost:3001/api
+http://localhost:3004/api
 ```
 
 ### Autenticación
@@ -124,8 +124,8 @@ Content-Type: application/json
 Authorization: Bearer <token>
 
 {
-  "correo_usuario": "usuario@email.com",
-  "nombre_completo": "Juan Pérez",
+  "correo_usuario": "maria.lopez@test.com",
+  "nombre_completo": "María López",
   "productos": [
     {
       "producto_id": 1,
@@ -155,8 +155,8 @@ Content-Type: application/json
 Authorization: Bearer <token>
 
 {
-  "correo_usuario": "nuevo@email.com",
-  "nombre_completo": "Juan Carlos Pérez"
+  "correo_usuario": "jose.hernandez@test.com",
+  "nombre_completo": "José Hernández"
 }
 ```
 

@@ -55,7 +55,7 @@ Servicio de reseñas/calificaciones para la plataforma ByteStore. Este microserv
 
 | Variable | Descripción | Ejemplo |
 |----------|-------------|----------|
-| `PORT` | Puerto del servidor | `3003` |
+| `PORT` | Puerto del servidor | `3005` |
 | `DB_HOST` | Host de MySQL | `localhost` |
 | `DB_PORT` | Puerto de MySQL | `3306` |
 | `DB_USER` | Usuario de MySQL | `root` |
@@ -215,7 +215,7 @@ Para ejecutar con Docker:
 docker build -t reviews-service .
 
 # Ejecutar contenedor
-docker run -p 3003:3003 --env-file .env reviews-service
+docker run -p 3005:3005 --env-file .env reviews-service
 ```
 
 ## Notas Importantes
