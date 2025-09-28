@@ -13,7 +13,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 // Rutas
-app.use("/reviews", reviewsRoutes);
+app.use(reviewsRoutes);
 
 // Health check
 app.get("/health", (req, res) => {

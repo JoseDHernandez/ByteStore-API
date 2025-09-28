@@ -26,8 +26,8 @@ app.use(express.json({ limit: "10mb" })); // Parser JSON
 app.use(express.urlencoded({ extended: true })); // Parser URL-encoded
 
 // Rutas principales
-app.use("/orders", ordersRoutes);
-app.use("/orders", orderStatusRoutes);
+app.use(ordersRoutes);
+app.use(orderStatusRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
