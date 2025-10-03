@@ -58,7 +58,18 @@ export class ProductsController {
     @Query('search') search?: string,
     @Query('sort') sort?: 'order_price' | 'order_review',
     @Query('order') order?: 'ASC' | 'DESC',
+    @Query('list') list?: string,
   ): Promise<ResponseProductDTO[] | ResponseProductPaginatedDTO> {
+    //Productos por lista
+    if (list) {
+      const listIds: number[] = list
+        .split(',')
+        .map((id) => Number(id.trim()))
+        .filter((num) => !isNaN(num));
+      if (list.length === 0)
+        throw new BadRequestException('Los ids indicados no son validos');
+      return this.productsService.getProductsByList(listIds);
+    }
     //Paginación sola
     if (per_page || page || search || sort || order) {
       //Valores por defecto
@@ -72,7 +83,7 @@ export class ProductsController {
         : []; //separar términos por ,
       const orderType =
         order && order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC'; //Establecer orden
-      //typos de orden
+      //tipos de orden
       const sortPrice = sort && sort === 'order_price' ? orderType : null;
       const sortReview = sort && sort === 'order_review' ? orderType : null;
       return this.productsService.getProductsPaginated(
@@ -105,7 +116,6 @@ export class ProductsController {
   ): Promise<ResponseProductDTO> {
     return this.productsService.getProductById(id);
   }
-
   //Actualizar calificación
   @Patch(':id')
   updateQualification(

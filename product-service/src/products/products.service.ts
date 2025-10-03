@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './product.entity';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { CreateProductDTO } from './dto/create-product.dto';
 import {
   ResponseProductDTO,
@@ -269,5 +269,14 @@ export class ProductsService {
     throw new NotFoundException(
       `No se pudo actualizar la calificación del producto con el id:${id}`,
     );
+  }
+
+  //obtener productos por lista
+  async getProductsByList(list: number[]): Promise<ResponseProductDTO[]> {
+    const res = await this.productRepository.find({
+      relations: ['brand', 'processor', 'system', 'display'],
+      where: { id: In(list) },
+    });
+    return res.map((r) => this.parseProductToDTO(r));
   }
 }

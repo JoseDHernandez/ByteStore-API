@@ -53,7 +53,13 @@ create table `products`(
 create index index_product_name on products (name);
 create index index_product_model on products (model);
 
-alter database products character set utf8mb4 collate utf8mb4_spanish2_ci;
+ALTER TABLE `products` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish2_ci;
+ALTER TABLE `processors` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish2_ci;
+ALTER TABLE `operating_systems` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish2_ci;
+ALTER TABLE `displays` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish2_ci;
+ALTER TABLE `brands` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish2_ci;
+
+
 -- INSERTS FOR operating_systems
 INSERT INTO operating_systems ( `system`, distribution) VALUES ( 'Windows', 'Windows 11 Home');
 INSERT INTO operating_systems ( `system`, distribution) VALUES ( 'Windows', 'Windows 11');

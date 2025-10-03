@@ -21,6 +21,7 @@ La mayoría de las operaciones de este servicio requieren autenticación mediant
   - [Productos](#productos)
     - [Solicitar productos (Publica)](#solicitar-productos-pública)
     - [Obtener un producto por ID (Publica)](#obtener-un-producto-por-id-pública)
+    - [Obtener un producto por lista de IDs (Publica)](#obtener-un-producto-por-lista-de-ids-pública)
     - [Obtener filtros disponibles (Publica)](#obtener-filtros-disponibles-pública)
     - [Crear un producto](#crear-un-producto)
     - [Editar un producto](#editar-un-producto)
@@ -138,6 +139,8 @@ Al solicitar la lista de productos, se pueden usar los siguientes parámetros pa
 | `page` | number | 1 | Número de página (debe ser positivo) |
 | `limit` | number | 15 | Cantidad de productos en la respuesta (máximo 100) |
 | `search` | string | | Término de búsqueda (nombre, modelo, marca del producto, marca de los gráficos o marca del procesador) |
+| `sort`| string | | Tipo de orden `order_price` o `order_review` |
+| `order` | string | `ASC` | Orden ascendente (`ASC`) o descendente (`DESC`) |
 
 **Respuesta:**
 
@@ -194,6 +197,117 @@ Obtiene un producto por su ID (numérico).
     "brand": "AMD Radeon"
   }
 }
+```
+
+#### Obtener un producto por lista de IDs (Publica)
+
+Obtiene una lista de productos por sus IDs (numéricos), separados por comas.
+
+**Parámetros:**
+| Parámetro |Tipo | Valor por defecto | Descripción |
+| --------- | ----------------------------------- | ------- | ----------------- |
+| `list` | string | | lista de los ids de los productos (separados por comas). Ejemplo: `1,2,3` |
+
+**GET** `/?list=1,2,3`
+
+**Respuesta:**
+
+```json
+[
+  {
+    "id": 1,
+    "name": "HP Intel Core I3 - 8GB",
+    "description": "Con el PortÃ¡til ...",
+    "price": 3299000,
+    "discount": 54,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/198122843657-001-750Wx750H.webp",
+    "model": "15-fd0026la",
+    "ram_capacity": 8,
+    "disk_capacity": 512,
+    "qualification": "0.0",
+    "brand": "HP",
+    "processor": {
+      "brand": "Intel",
+      "family": "Intel Core I3",
+      "model": "N305",
+      "cores": 8,
+      "speed": "Hasta 3,8 GHz con tecnologÃ­a Intel Turbo Boost, 6 MB de cachÃ© L3, 8 nÃºcleos y 8 subprocesos."
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11 Home"
+    },
+    "display": {
+      "size": 15,
+      "resolution": "Full HD",
+      "graphics": "GrÃ¡ficos integrados",
+      "brand": "Intel Graphics"
+    }
+  },
+  {
+    "id": 2,
+    "name": "Lenovo AMD R5 - 24GB",
+    "description": "Potencia y elegancia...",
+    "price": 3999000,
+    "discount": 40,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/198155958762-001-750Wx750H.webp",
+    "model": "83KA001NLM",
+    "ram_capacity": 24,
+    "disk_capacity": 512,
+    "qualification": "0.0",
+    "brand": "LENOVO",
+    "processor": {
+      "brand": "AMD",
+      "family": "Ryzen 5",
+      "model": "8640HS",
+      "cores": 6,
+      "speed": "(12T, 3.5 / 4.9GHz, 6MB L2 / 16MB L3)"
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11 Home"
+    },
+    "display": {
+      "size": 15,
+      "resolution": "WUXGA",
+      "graphics": "GrÃ¡ficos integrados",
+      "brand": "AMD Radeon"
+    }
+  },
+  {
+    "id": 3,
+    "name": "HP Intel Core I5 - 16GB",
+    "description": "Con el PortÃ¡til HP 15-fd1255la,...",
+    "price": 4999000,
+    "discount": 50,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/199251256417-003-750Wx750H.webp",
+    "model": "15-fd1255la",
+    "ram_capacity": 16,
+    "disk_capacity": 512,
+    "qualification": "0.0",
+    "brand": "HP",
+    "processor": {
+      "brand": "Intel",
+      "family": "Intel Core I5",
+      "model": "125H",
+      "cores": 14,
+      "speed": "Hasta 4.5 GHz con Intel Turbo Boost Technology, 18 MB L3 cachÃ©, 14 nÃºcleos, 18 hilos"
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11 Home"
+    },
+    "display": {
+      "size": 15,
+      "resolution": "Full HD",
+      "graphics": "GrÃ¡ficos integrados",
+      "brand": "Intel Graphics"
+    }
+  }
+]
 ```
 
 ---
