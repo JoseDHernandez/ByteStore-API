@@ -3,7 +3,7 @@ export interface Review {
   producto_id: number;
   usuario_id: string;
   calificacion: number;
-  comentario?: string;
+  comentario: string;
   fecha: string; // ISO format
 }
 
@@ -24,7 +24,7 @@ export interface ReviewResponseDTO {
   usuario_id: string;
   nombre_usuario: string;
   calificacion: number;
-  comentario?: string;
+  comentario: string;
   fecha: string;
 }
 

@@ -6,6 +6,19 @@ Para los tokens de autenticación, se utiliza JWT (JSON Web Tokens). Asegúrate 
 
 ## API Endpoints
 
+Los parámetros de consulta disponibles para los endpoints GET son:
+
+| Parámetro           | Descripción                              | Tipo    | Valores posibles               | Por defecto   |
+| ------------------- | ---------------------------------------- | ------- | ------------------------------ | ------------- |
+| `page`              | Página de resultados a mostrar           | Integer | Cualquier número entero        | 1             |
+| `limit`             | Número de resultados por página          | Integer | Cualquier número entero        | 10            |
+| `sort`              | Campo por el cual ordenar los resultados | String  | `review_date`, `qualification` | `review_date` |
+| `order`             | Orden de los resultados                  | String  | `ASC`, `DESC`                  | `DESC`        |
+| `product_id`        | Filtrar reseñas por ID de producto       | Integer | Cualquier número entero        | Ninguno       |
+| `min_qualification` | Filtrar reseñas por calificación mínima  | Float   | Cualquier número decimal       | Ninguno       |
+| `max_qualification` | Filtrar reseñas por calificación máxima  | Float   | Cualquier número decimal       | Ninguno       |
+| `user_id`           | Filtrar reseñas por ID de usuario        | String  | Cualquier cadena               | Ninguno       |
+
 ### Obtener todas las reseñas
 
 Para obtener todas las reseñas de productos.
@@ -16,20 +29,27 @@ Para obtener todas las reseñas de productos.
 
 ```json
 {
-  "total": 15,
+  "total": 2,
   "pages": 1,
   "first": 1,
   "next": null,
   "prev": null,
   "data": [
     {
-      "calificacion_id": 15,
-      "producto_id": 13,
-      "usuario_id": "01991c11-412e-7569-bb85-a4f77ba08bb7",
-      "nombre_usuario": "Usuario",
-      "calificacion": 3,
-      "comentario": "Producto decente pero...",
-      "fecha": "2024-01-30T13:45:00.000Z"
+      "id": 1,
+      "product_id": 1,
+      "qualification": "4.5",
+      "comment": "Excelente producto, muy satisfecho con la compra.",
+      "review_date": "2025-10-02T23:49:37.000Z",
+      "user_name": "José Hernández"
+    },
+    {
+      "id": 2,
+      "product_id": 1,
+      "qualification": "3.0",
+      "comment": "El producto es bueno pero el envío fue lento.",
+      "review_date": "2025-10-02T23:49:37.000Z",
+      "user_name": "José Hernández"
     }
   ]
 }
@@ -47,13 +67,12 @@ Para obtener una reseña específica por su ID.
 
 ```json
 {
-  "calificacion_id": 15,
-  "producto_id": 13,
-  "usuario_id": "01991c11-412e-7569-bb85-a4f77ba08bb7",
-  "nombre_usuario": "Usuario",
-  "calificacion": 3,
-  "comentario": "Producto decente pero...",
-  "fecha": "2024-01-30T13:45:00.000Z"
+  "id": 1,
+  "product_id": 1,
+  "qualification": "4.5",
+  "comment": "Excelente producto, muy satisfecho con la compra.",
+  "review_date": "2025-10-02T23:49:37.000Z",
+  "user_name": "José Hernández"
 }
 ```
 
@@ -67,11 +86,12 @@ Para crear una nueva reseña de producto.
 
 **Cuerpo de la solicitud**
 
-```json
+```js
 {
-  "producto_id": 5,
-  "calificacion": 4,
-  "comentario": "Un buen producto, lo recomiendo."
+  "product_id": 2,
+  "user_name": "Maria Lopez", // Generado o pasado desde el cliente
+  "qualification": 4.3,
+  "comment": "Un buen producto, lo recomiendo."
 }
 ```
 
@@ -79,15 +99,14 @@ Para crear una nueva reseña de producto.
 
 ```json
 {
-  "message": "Reseña creada exitosamente",
+  "message": "Calificación creada",
   "data": {
-    "calificacion_id": 17,
-    "producto_id": 5,
-    "usuario_id": "01991c0e-16f0-707f-9f6f-3614666caead",
-    "nombre_usuario": "Usuario",
-    "calificacion": 4,
-    "comentario": "Un buen producto, lo recomiendo.",
-    "fecha": "2025-09-28T03:44:01.000Z"
+    "id": 1,
+    "product_id": 2,
+    "qualification": "4.3",
+    "comment": "Un buen producto, lo recomiendo.",
+    "review_date": "2025-10-03T00:06:15.000Z",
+    "user_name": "Maria Lopez"
   }
 }
 ```
@@ -104,8 +123,8 @@ Para actualizar una reseña existente.
 
 ```json
 {
-  "calificacion": 5,
-  "comentario": "Actualización: Excelente producto!"
+  "qualification": 3.2,
+  "comment": "No me gusto, una entrega muy lenta"
 }
 ```
 
@@ -113,15 +132,14 @@ Para actualizar una reseña existente.
 
 ```json
 {
-  "message": "Reseña actualizada exitosamente",
+  "message": "Calificación actualizada",
   "data": {
-    "calificacion_id": 17,
-    "producto_id": 5,
-    "usuario_id": "01991c0e-16f0-707f-9f6f-3614666caead",
-    "nombre_usuario": "Usuario",
-    "calificacion": 5,
-    "comentario": "Actualización: Excelente producto!",
-    "fecha": "2025-09-28T03:44:01.000Z"
+    "id": 1,
+    "product_id": 2,
+    "qualification": "3.2",
+    "comment": "No me gusto, una entrega muy lenta",
+    "review_date": "2025-10-03T00:06:15.000Z",
+    "user_name": "José Hernández"
   }
 }
 ```

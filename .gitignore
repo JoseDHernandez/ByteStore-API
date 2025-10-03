@@ -17,6 +17,8 @@ yarn-error.log*
 
 # Ignorar volúmenes y datos temporales
 product-service/data/
+review-service/data/
+order-service/data/
 cart-service/data/
 cart-service/mongo_data/
 api-gateway/data/

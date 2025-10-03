@@ -2,16 +2,17 @@ import { z } from "zod";
 
 // Esquema para crear una nueva reseña
 export const createReviewSchema = z.object({
-  producto_id: z
+  product_id: z
     .number()
     .int("El ID del producto debe ser un número entero")
     .positive("El ID del producto debe ser positivo"),
-  calificacion: z
-    .number()
-    .int("La calificación debe ser un número entero")
-    .min(1, "La calificación mínima es 1")
-    .max(5, "La calificación máxima es 5"),
-  comentario: z
+  qualification: z.number().max(5),
+  user_name: z
+    .string()
+    .min(5)
+    .max(50)
+    .regex(/^[A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s]+$/),
+  comment: z
     .string()
     .trim()
     .min(10, "El comentario debe tener al menos 10 caracteres")
@@ -19,19 +20,13 @@ export const createReviewSchema = z.object({
     .regex(
       /^[A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s\.,;:!?¿¡()"'-]+$/,
       "El comentario contiene caracteres no válidos"
-    )
-    .optional(),
+    ),
 });
 
 // Esquema para actualizar una reseña
 export const updateReviewSchema = z.object({
-  calificacion: z
-    .number()
-    .int("La calificación debe ser un número entero")
-    .min(1, "La calificación mínima es 1")
-    .max(5, "La calificación máxima es 5")
-    .optional(),
-  comentario: z
+  qualification: z.number().max(5),
+  comment: z
     .string()
     .trim()
     .min(10, "El comentario debe tener al menos 10 caracteres")
@@ -57,17 +52,17 @@ export const reviewIdSchema = z.object({
 export const reviewsQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
-  producto_id: z.coerce.number().int().positive().optional(),
-  usuario_id: z.string().trim().optional(),
-  sort: z.enum(["fecha", "calificacion"]).default("fecha"),
+  product_id: z.coerce.number().int().positive().optional(),
+  user_id: z.string().trim().optional(),
+  sort: z.enum(["review_date", "qualification"]).default("review_date"),
   order: z.enum(["ASC", "DESC"]).default("DESC"),
-  calificacion_min: z.coerce.number().int().min(1).max(5).optional(),
-  calificacion_max: z.coerce.number().int().min(1).max(5).optional(),
+  qualification_min: z.coerce.number().int().min(1).max(5).optional(),
+  qualification_max: z.coerce.number().int().min(1).max(5).optional(),
 });
 
 // Esquema para validar producto_id en parámetros
 export const productIdSchema = z.object({
-  producto_id: z
+  product_id: z
     .string()
     .transform((val) => parseInt(val, 10))
     .refine((val) => !isNaN(val) && val > 0, {

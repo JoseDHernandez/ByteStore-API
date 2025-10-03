@@ -52,6 +52,8 @@ create table `products`(
 );
 create index index_product_name on products (name);
 create index index_product_model on products (model);
+
+alter database products character set utf8mb4 collate utf8mb4_spanish2_ci;
 -- INSERTS FOR operating_systems
 INSERT INTO operating_systems ( `system`, distribution) VALUES ( 'Windows', 'Windows 11 Home');
 INSERT INTO operating_systems ( `system`, distribution) VALUES ( 'Windows', 'Windows 11');

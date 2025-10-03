@@ -14,7 +14,7 @@ create table `users` (
     primary key(id),
     constraint FK_role foreign key (`role`) references roles (`id`) on update cascade
     );
-
+alter database products character set utf8mb4 collate utf8mb4_spanish2_ci;
 insert into roles (name) values ('Cliente');
 insert into roles (name)  values ('Administrador');
 
