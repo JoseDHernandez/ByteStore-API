@@ -14,13 +14,15 @@ import {
   ordersQuerySchema,
 } from "../schemas/order.schema.js";
 
+// Tipos auxiliares: filas de MySQL enriquecidas con el modelo del dominio
 type OrderRow = RowDataPacket & Order;
 type OrderProductRow = RowDataPacket & OrderProduct;
 
 /**
- * Crear una nueva orden
- * @param req - Request con datos de la orden
- * @param res - Response con la orden creada
+ * Crea una orden y sus productos en transacción.
+ * Verifica permisos del usuario y retorna la orden completa.
+ * @param req Request con datos de la orden
+ * @param res Response con la orden creada
  */
 export async function createOrder(
   req: Request,
@@ -29,31 +31,38 @@ export async function createOrder(
   try {
     // Validar datos de entrada
     const validatedData = createOrderSchema.parse(req.body);
-    const usuario_id = req.auth!.id;
+    // Normalizar el identificador del usuario autenticado a número
+    const usuario_id = Number(req.auth!.id);
+    // Asegurar que el user_id de la solicitud esté en número para comparaciones y escrituras
+    const validatedUserId =
+      typeof validatedData.user_id === "string"
+        ? Number(validatedData.user_id)
+        : validatedData.user_id;
+    // Bandera de rol administrador para controlar permisos en el flujo
     const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     // Verificar que el usuario puede crear la orden (debe ser el mismo usuario o admin)
-    if (!isAdmin && validatedData.user_id !== usuario_id) {
+    if (!isAdmin && validatedUserId !== usuario_id) {
       return res.status(403).json({
         message: "No tienes permisos para crear una orden para otro usuario",
       });
     }
 
-    // Iniciar transacción
+    // Iniciar transacción para garantizar atomicidad entre orden y productos
     await db.query("START TRANSACTION");
 
     try {
-      // Calcular el total de la orden
+      // Calcular el total de la orden (acumulado de subtotales)
       let total = 0;
-      const productDetails: any[] = [];
+      const productDetails: any[] = []; // Detalles de productos que se insertarán en la tabla intermedia
 
-      // Obtener detalles de cada producto (simulado - en un entorno real consultaríamos el servicio de productos)
+      // Obtener detalles de cada producto (simulado). En producción se consultaría el servicio de productos.
       for (const producto of validatedData.productos) {
         // Por ahora, usamos precios simulados basados en el producto_id
         const precio = Math.floor(Math.random() * 2000000) + 500000; // Precio entre 500k y 2.5M
         const descuento = Math.floor(Math.random() * 20); // Descuento entre 0% y 20%
-        const subtotal = precio * producto.cantidad * (1 - descuento / 100);
-        total += subtotal;
+        const subtotal = precio * producto.cantidad * (1 - descuento / 100); // Nota: considerar manejo de decimales/impuestos
+        total += subtotal; // acumulamos
 
         productDetails.push({
           producto_id: producto.producto_id,
@@ -74,7 +83,7 @@ export async function createOrder(
         `INSERT INTO orders (user_id, correo_usuario, direccion, nombre_completo, estado, total, fecha_pago) 
          VALUES (?, ?, ?, ?, 'pendiente', ?, NOW())`,
         [
-          validatedData.user_id,
+          validatedUserId,
           validatedData.correo_usuario,
           validatedData.direccion,
           validatedData.nombre_completo,
@@ -103,7 +112,7 @@ export async function createOrder(
         );
       }
 
-      // Confirmar transacción
+      // Confirmar transacción: persistir cambios de orden y productos
       await db.query("COMMIT");
 
       // Obtener la orden creada con sus productos
@@ -157,9 +166,10 @@ export async function createOrder(
 }
 
 /**
- * Obtener órdenes con paginación y filtros
- * @param req - Request con parámetros de consulta
- * @param res - Response con órdenes paginadas
+ * Lista órdenes con filtros y paginación.
+ * Incluye productos por orden.
+ * @param req Request con parámetros de consulta
+ * @param res Response con órdenes paginadas
  */
 export async function getOrders(
   req: Request,
@@ -179,10 +189,12 @@ export async function getOrders(
       order,
     } = validatedQuery;
 
-    const usuario_id = req.auth!.id;
+    // Normalizar el identificador del usuario autenticado a número
+    const usuario_id = Number(req.auth!.id);
     const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
-    // Construir la consulta base
+    // Construir la consulta base (se filtra con condiciones dinámicas)
+    // Consulta base: se complementará con condiciones dinámicas
     let baseQuery = `
       SELECT 
         orden_id,
@@ -198,7 +210,9 @@ export async function getOrders(
       WHERE 1=1
     `;
 
+    // Consulta de conteo para cálculo de páginas
     let countQuery = "SELECT COUNT(*) as total FROM orders WHERE 1=1";
+    // Acumulador de parámetros para ambas consultas
     const queryParams: any[] = [];
 
     // Si no es admin, solo puede ver sus propias órdenes
@@ -267,8 +281,8 @@ export async function getOrders(
     // Ejecutar consulta
     const [orders] = await db.query<OrderRow[]>(baseQuery, queryParams);
 
-    // Obtener productos para cada orden
-    const ordersWithProducts: OrderResponseDTO[] = [];
+    // Obtener productos para cada orden (N+1 consultas)
+    const ordersWithProducts: OrderResponseDTO[] = []; // Acumulador de órdenes con sus productos
     for (const order of orders) {
       const [products] = await db.query<OrderProductRow[]>(
         "SELECT * FROM order_products WHERE orden_id = ?",
@@ -303,9 +317,10 @@ export async function getOrders(
 }
 
 /**
- * Obtener orden por ID
- * @param req - Request con ID de la orden
- * @param res - Response con la orden encontrada
+ * Devuelve una orden y sus productos por ID.
+ * Requiere dueño o ADMINISTRADOR.
+ * @param req Request con ID de la orden
+ * @param res Response con la orden encontrada
  */
 export async function getOrderById(
   req: Request,
@@ -314,7 +329,9 @@ export async function getOrderById(
   try {
     // Validar parámetro ID
     const { id } = orderIdSchema.parse(req.params);
-    const usuario_id = req.auth!.id;
+    // Normalizar el identificador del usuario autenticado a número
+    const usuario_id = Number(req.auth!.id);
+    // Bandera de rol administrador para permisos de lectura
     const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     // Buscar la orden
@@ -332,16 +349,19 @@ export async function getOrderById(
       FROM orders WHERE orden_id = ?`,
       [id]
     );
-    if (!order[0]) {
-      return res.status(404).json({ message: "Orden no encontrada" });
-    }
-
     if (order.length === 0) {
       return res.status(404).json({ message: "Orden no encontrada" });
     }
+    // Tras verificar la existencia, trabajamos con una referencia no nula
+    const orderRow = order[0]!;
+    // Normalizar el tipo del user_id de la orden para comparaciones
+    const orderUserId =
+      typeof orderRow.user_id === "string"
+        ? Number(orderRow.user_id)
+        : orderRow.user_id;
 
     // Verificar permisos (propietario o admin)
-    if (!isAdmin && order[0].user_id !== usuario_id) {
+    if (!isAdmin && orderUserId !== usuario_id) {
       return res.status(403).json({
         message: "No tienes permisos para ver esta orden",
       });
@@ -354,7 +374,7 @@ export async function getOrderById(
     );
 
     const response: OrderResponseDTO = {
-      ...order[0],
+      ...orderRow,
       productos: products,
     };
 
@@ -372,9 +392,10 @@ export async function getOrderById(
 }
 
 /**
- * Actualizar orden
- * @param req - Request con ID y datos a actualizar
- * @param res - Response con la orden actualizada
+ * Actualiza campos permitidos de una orden.
+ * Valida permisos y retorna la orden actualizada.
+ * @param req Request con ID y datos a actualizar
+ * @param res Response con la orden actualizada
  */
 export async function updateOrder(
   req: Request,
@@ -384,7 +405,8 @@ export async function updateOrder(
     // Validar parámetro ID y datos
     const { id } = orderIdSchema.parse(req.params);
     const validatedData = updateOrderSchema.parse(req.body);
-    const usuario_id = req.auth!.id;
+    // Normalizar el identificador del usuario autenticado a número
+    const usuario_id = Number(req.auth!.id);
     const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     // Verificar que la orden existe
@@ -393,17 +415,19 @@ export async function updateOrder(
       [id]
     );
 
-    if (!existingOrder[0]) {
-      return res.status(404).json({ message: "Orden no encontrada" });
-    }
-
     if (existingOrder.length === 0) {
       return res.status(404).json({ message: "Orden no encontrada" });
     }
+    // Referencia no nula y normalización del tipo del user_id
+    const existingOrderRow = existingOrder[0]!;
+    const existingOrderUserId =
+      typeof existingOrderRow.user_id === "string"
+        ? Number(existingOrderRow.user_id)
+        : existingOrderRow.user_id;
 
     // Verificar permisos
     const canUpdateStatus = isAdmin;
-    const canUpdateAddress = isAdmin || existingOrder[0].user_id === usuario_id;
+    const canUpdateAddress = isAdmin || existingOrderUserId === usuario_id;
 
     if (validatedData.estado && !canUpdateStatus) {
       return res.status(403).json({
@@ -512,9 +536,10 @@ export async function updateOrder(
 }
 
 /**
- * Eliminar orden
- * @param req - Request con ID de la orden
- * @param res - Response de confirmación
+ * Elimina una orden.
+ * Solo ADMINISTRADOR.
+ * @param req Request con ID de la orden
+ * @param res Response de confirmación
  */
 export async function deleteOrder(
   req: Request,
@@ -523,7 +548,6 @@ export async function deleteOrder(
   try {
     // Validar parámetro ID
     const { id } = orderIdSchema.parse(req.params);
-    const usuario_id = req.auth!.id;
     const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     // Verificar que la orden existe
@@ -560,16 +584,18 @@ export async function deleteOrder(
 }
 
 /**
- * Obtener estadísticas de órdenes del usuario
- * @param req - Request con datos del usuario
- * @param res - Response con estadísticas
+ * Estadísticas de órdenes y productos más comprados.
+ * Restringe por usuario si no es ADMINISTRADOR.
+ * @param req Request
+ * @param res Response con estadísticas
  */
 export async function getOrderStats(
   req: Request,
   res: Response
 ): Promise<Response | void> {
   try {
-    const usuario_id = req.auth!.id;
+    // Normalizar el identificador del usuario autenticado a número
+    const usuario_id = Number(req.auth!.id);
     const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     let userCondition = "";
