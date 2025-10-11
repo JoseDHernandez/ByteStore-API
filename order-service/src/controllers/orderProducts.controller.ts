@@ -12,7 +12,10 @@ function hasOrderAccess(
   userId: number,
   isAdmin: boolean
 ): boolean {
-  return isAdmin || order.user_id === userId;
+  // Normalizar user_id de la orden a número para comparar correctamente
+  const ownerId =
+    typeof order.user_id === 'string' ? Number(order.user_id) : order.user_id;
+  return isAdmin || ownerId === userId;
 }
 
 function isOrderPending(order: RowDataPacket): boolean {
