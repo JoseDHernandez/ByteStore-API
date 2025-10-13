@@ -13,6 +13,8 @@ import {
   orderIdSchema,
   ordersQuerySchema,
 } from "../schemas/order.schema.js";
+import { ORDER_PRODUCTS_SELECT_FIELDS, ORDER_SELECT_FIELDS } from "../utils/sql.js";
+import { computePagination } from "../utils/pagination.js";
 
 // Tipos auxiliares: filas de MySQL enriquecidas con el modelo del dominio
 type OrderRow = RowDataPacket & Order;
@@ -197,15 +199,7 @@ export async function getOrders(
     // Consulta base: se complementará con condiciones dinámicas
     let baseQuery = `
       SELECT 
-        orden_id,
-        user_id,
-        correo_usuario,
-        direccion,
-        nombre_completo,
-        estado,
-        total,
-        DATE_FORMAT(fecha_pago, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_pago,
-        DATE_FORMAT(fecha_entrega, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_entrega
+        ${ORDER_SELECT_FIELDS}
       FROM orders
       WHERE 1=1
     `;
@@ -267,12 +261,11 @@ export async function getOrders(
     const total = totalResult[0].total;
 
     // Calcular paginación
-    const pages = Math.ceil(total / limit);
-    const currentPage = Math.max(1, Math.min(page, pages));
-    const offset = (currentPage - 1) * limit;
-    const first = 1;
-    const prev = currentPage > 1 ? currentPage - 1 : null;
-    const next = currentPage < pages ? currentPage + 1 : null;
+    const { pages, currentPage, offset, first, prev, next } = computePagination(
+      total,
+      limit,
+      page
+    );
 
     // Aplicar paginación
     baseQuery += " LIMIT ? OFFSET ?";
@@ -285,7 +278,11 @@ export async function getOrders(
     const ordersWithProducts: OrderResponseDTO[] = []; // Acumulador de órdenes con sus productos
     for (const order of orders) {
       const [products] = await db.query<OrderProductRow[]>(
-        "SELECT * FROM order_products WHERE orden_id = ?",
+        `SELECT 
+          ${ORDER_PRODUCTS_SELECT_FIELDS}
+        FROM order_products 
+        WHERE orden_id = ?
+        ORDER BY orden_productos_id`,
         [order.orden_id]
       );
       ordersWithProducts.push({
@@ -369,7 +366,11 @@ export async function getOrderById(
 
     // Obtener productos de la orden
     const [products] = await db.query<OrderProductRow[]>(
-      "SELECT * FROM order_products WHERE orden_id = ?",
+      `SELECT 
+        ${ORDER_PRODUCTS_SELECT_FIELDS}
+      FROM order_products 
+      WHERE orden_id = ?
+      ORDER BY orden_productos_id`,
       [id]
     );
 
@@ -498,7 +499,20 @@ export async function updateOrder(
       throw new Error("No se pudo actualizar la orden");
     }
     const [products] = await db.query<OrderProductRow[]>(
-      "SELECT * FROM order_products WHERE orden_id = ?",
+      `SELECT 
+        orden_productos_id,
+        producto_id,
+        nombre,
+        precio,
+        descuento,
+        marca,
+        modelo,
+        cantidad,
+        imagen,
+        (precio * cantidad * (1 - descuento/100)) as subtotal
+      FROM order_products 
+      WHERE orden_id = ?
+      ORDER BY orden_productos_id`,
       [id]
     );
 
