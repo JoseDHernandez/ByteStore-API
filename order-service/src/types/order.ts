@@ -21,6 +21,7 @@ export interface OrderProduct {
   modelo: string;
   cantidad: number;
   imagen: string;
+  subtotal: number;
 }
 
 export interface OrderCreateDTO {
