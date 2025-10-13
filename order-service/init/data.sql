@@ -8,6 +8,38 @@ CREATE DATABASE IF NOT EXISTS orders_db CHARACTER SET utf8mb4 COLLATE utf8mb4_un
 USE orders_db;
 
 -- =====================================================
+-- TABLA: products (catálogo local)
+-- Catálogo interno de productos para respuestas completas sin depender de product-service
+-- =====================================================
+CREATE TABLE IF NOT EXISTS products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    precio DECIMAL(10,2) NOT NULL,
+    descuento INT DEFAULT 0,
+    marca VARCHAR(255),
+    modelo VARCHAR(255),
+    imagen VARCHAR(512),
+    stock INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='Catálogo local de productos';
+
+-- Productos base
+INSERT INTO products (nombre, precio, descuento, marca, modelo, imagen, stock) VALUES
+('HP Intel Core I3 - 8GB', 3299000.00, 54, 'HP', '15-fd0026la', '198122843657-001-750Wx750H.webp', 100),
+('ASUS Vivobook Intel Core I5 - 16GB', 3799000.00, 0, 'ASUS', 'X1605VA-MB1193W', '4711387799109-001-750Wx750H.webp', 80),
+('ASUS Vivobook AMD R7 - 16GB', 4699000.00, 48, 'ASUS', 'M1405YA-LY293W', '4711636049719-003-750Wx750H.webp', 60),
+('ASUS TUF Intel Core I5 - 16GB', 5899000.00, 40, 'ASUS', 'FX607VJ-RL165W', '4711636030427-001-750Wx750H.webp', 40),
+('LENOVO IdeaPad AMD R7 - 16GB', 4099000.00, 48, 'LENOVO', '82XM00W0LM', '198157260429-001-750Wx750H.webp', 75),
+('HP Pavilion Intel Core I5 - 8GB', 4499000.00, 50, 'HP', '14-ek1011la', '198990192536-001-750Wx750H.webp', 55),
+('HP Intel Core I5 - 8GB', 3999000.00, 45, 'HP', '14-Ep1001la', '198415103550-001-750Wx750H.webp', 70),
+('ASUS Vivobook Intel Core I3 - 8GB', 3269000.00, 51, 'ASUS', 'E1504GA-NJ531W', '4711387562987-003-750Wx750H.webp', 90),
+('HP Intel Core I5 - 16GB', 4999000.00, 50, 'HP', '15-fd1255la', '199251256417-003-750Wx750H.webp', 65),
+('ASUS Vivobook Intel Core I5 - 8GB', 3799000.00, 47, 'ASUS', 'X1605VA-MB1625W', '4711387805114-001-750Wx750H.webp', 85),
+('HP AMD R7 - 16GB', 4599000.00, 48, 'HP', '15-fc0276la', '198990787145-001-750Wx750H.webp', 50),
+('Lenovo AMD R5 - 24GB', 3999000.00, 40, 'LENOVO', '83KA001NLM', '198155958762-001-750Wx750H.webp', 60);
+
+-- =====================================================
 -- TABLA: orders (órdenes)
 -- Almacena la información principal de cada orden
 -- =====================================================

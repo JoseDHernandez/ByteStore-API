@@ -1,6 +1,28 @@
 -- Configurar charset de la base de datos
 ALTER DATABASE reviews_db CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish2_ci;
 USE reviews_db;
+-- =====================================================
+-- TABLA: products (catálogo local)
+-- Catálogo interno de productos para respuestas completas sin depender de product-service
+-- =====================================================
+CREATE TABLE IF NOT EXISTS products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    precio DECIMAL(10,2) NOT NULL,
+    descuento INT DEFAULT 0,
+    marca VARCHAR(255),
+    modelo VARCHAR(255),
+    imagen VARCHAR(512),
+    stock INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB COMMENT='Catálogo local de productos';
+
+-- Productos base
+INSERT INTO products (nombre, precio, descuento, marca, modelo, imagen, stock) VALUES
+('HP Intel Core I3 - 8GB', 3299000.00, 54, 'HP', '15-fd0026la', '198122843657-001-750Wx750H.webp', 100),
+('ASUS Vivobook Intel Core I5 - 16GB', 3799000.00, 0, 'ASUS', 'X1605VA-MB1193W', '4711387799109-001-750Wx750H.webp', 80),
+('ASUS Vivobook AMD R7 - 16GB', 4699000.00, 48, 'ASUS', 'M1405YA-LY293W', '4711636049719-003-750Wx750H.webp', 60);
 -- Crear tabla de usuarios 
 
 CREATE TABLE `users` (
@@ -22,7 +44,8 @@ CREATE TABLE `reviews` (
     INDEX `idx_user_id` (`user_id`),
     INDEX `idx_review_date` (`review_date`),
     INDEX `idx_qualification` (`qualification`),
-    constraint `fk_user_review`foreign key (`user_id`) references users(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    constraint `fk_user_review` foreign key (`user_id`) references users(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    constraint `fk_product_review` foreign key (`product_id`) references products(`id`) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 alter table `reviews` convert to character set utf8mb4 collate utf8mb4_spanish2_ci;
