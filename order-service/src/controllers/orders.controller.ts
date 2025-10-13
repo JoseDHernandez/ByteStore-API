@@ -15,6 +15,7 @@ import {
 } from "../schemas/order.schema.js";
 import { ORDER_PRODUCTS_SELECT_FIELDS, ORDER_SELECT_FIELDS } from "../utils/sql.js";
 import { computePagination } from "../utils/pagination.js";
+import { calculateShippingCost } from "../utils/shipping.js";
 
 // Tipos auxiliares: filas de MySQL enriquecidas con el modelo del dominio
 type OrderRow = RowDataPacket & Order;
@@ -77,19 +78,62 @@ export async function createOrder(
           ],
           modelo: `Modelo-${producto.producto_id}-${new Date().getFullYear()}`,
           imagen: `https://example.com/images/producto-${producto.producto_id}.jpg`,
+          product_uid: `PRD-${producto.producto_id}`,
         });
       }
 
+      // Ordenar productos de menor a mayor precio (requisito)
+      productDetails.sort((a, b) => a.precio - b.precio);
+
+      // Calcular costo de envío
+      const shippingInput: any = {
+        tipo_entrega: validatedData.tipo_entrega ?? "domicilio",
+        geolocalizacion_habilitada: validatedData.geolocalizacion_habilitada ?? false,
+      };
+      if (validatedData.latitud !== undefined) shippingInput.latitud = validatedData.latitud;
+      if (validatedData.longitud !== undefined) shippingInput.longitud = validatedData.longitud;
+      const costo_envio = calculateShippingCost(shippingInput);
+
+      // Ajustar total final incluyendo envío
+      total = Math.round(total + costo_envio);
+
+      // Derivar campos de pago
+      const metodo_pago = validatedData.metodo_pago ?? "tarjeta";
+      const card_type = validatedData.tarjeta?.tipo ?? null;
+      const card_brand = validatedData.tarjeta?.marca ?? null;
+      const card_last4 = validatedData.tarjeta?.numero
+        ? validatedData.tarjeta.numero.slice(-4)
+        : null;
+      const pse_reference = validatedData.pse_reference ?? null;
+      const cash_on_delivery = validatedData.cash_on_delivery ? 1 : 0;
+
       // Crear la orden
       const [orderResult] = await db.query<ResultSetHeader>(
-        `INSERT INTO orders (user_id, correo_usuario, direccion, nombre_completo, estado, total, fecha_pago) 
-         VALUES (?, ?, ?, ?, 'pendiente', ?, NOW())`,
+        `INSERT INTO orders (
+           user_id, correo_usuario, direccion, nombre_completo,
+           estado, total, fecha_pago,
+           fecha_entrega_original,
+           tipo_entrega, costo_envio, geolocalizacion_habilitada, latitud, longitud,
+           metodo_pago, card_type, card_brand, card_last4, pse_reference, cash_on_delivery
+         ) 
+         VALUES (?, ?, ?, ?, 'en_proceso', ?, NOW(), DATE_ADD(NOW(), INTERVAL 3 DAY), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           validatedUserId,
           validatedData.correo_usuario,
           validatedData.direccion,
           validatedData.nombre_completo,
           total,
+          validatedData.tipo_entrega ?? "domicilio",
+          costo_envio,
+          (validatedData.geolocalizacion_habilitada ?? false) ? 1 : 0,
+          validatedData.latitud ?? null,
+          validatedData.longitud ?? null,
+          metodo_pago,
+          card_type,
+          card_brand,
+          card_last4,
+          pse_reference,
+          cash_on_delivery,
         ]
       );
 
@@ -98,11 +142,12 @@ export async function createOrder(
       // Insertar productos de la orden
       for (const product of productDetails) {
         await db.query(
-          `INSERT INTO order_products (orden_id, producto_id, nombre, precio, descuento, marca, modelo, cantidad, imagen)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO order_products (orden_id, producto_id, product_uid, nombre, precio, descuento, marca, modelo, cantidad, imagen)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             ordenId,
             product.producto_id,
+            product.product_uid,
             product.nombre,
             product.precio,
             product.descuento,
@@ -119,22 +164,12 @@ export async function createOrder(
 
       // Obtener la orden creada con sus productos
       const [newOrder] = await db.query<OrderRow[]>(
-        `SELECT 
-          orden_id,
-          user_id,
-          correo_usuario,
-          direccion,
-          nombre_completo,
-          estado,
-          total,
-          DATE_FORMAT(fecha_pago, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_pago,
-          DATE_FORMAT(fecha_entrega, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_entrega
-        FROM orders WHERE orden_id = ?`,
+        `SELECT ${ORDER_SELECT_FIELDS} FROM orders WHERE orden_id = ?`,
         [ordenId]
       );
 
       const [orderProducts] = await db.query<OrderProductRow[]>(
-        "SELECT * FROM order_products WHERE orden_id = ?",
+        `SELECT ${ORDER_PRODUCTS_SELECT_FIELDS} FROM order_products WHERE orden_id = ? ORDER BY precio ASC, descuento DESC`,
         [ordenId]
       );
 
@@ -333,17 +368,7 @@ export async function getOrderById(
 
     // Buscar la orden
     const [order] = await db.query<OrderRow[]>(
-      `SELECT 
-        orden_id,
-        user_id,
-        correo_usuario,
-        direccion,
-        nombre_completo,
-        estado,
-        total,
-        DATE_FORMAT(fecha_pago, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_pago,
-        DATE_FORMAT(fecha_entrega, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_entrega
-      FROM orders WHERE orden_id = ?`,
+      `SELECT ${ORDER_SELECT_FIELDS} FROM orders WHERE orden_id = ?`,
       [id]
     );
     if (order.length === 0) {
@@ -457,14 +482,93 @@ export async function updateOrder(
       updateValues.push(validatedData.direccion);
     }
 
-    if (validatedData.fecha_entrega !== undefined) {
-      // Convertir ISO a formato MySQL
-      const fechaEntrega = new Date(validatedData.fecha_entrega)
-        .toISOString()
-        .replace("T", " ")
-        .replace(".000Z", "");
-      updateFields.push("fecha_entrega = ?");
-      updateValues.push(fechaEntrega);
+    const toMySql = (iso?: string) =>
+      iso
+        ? new Date(iso).toISOString().replace("T", " ").replace(".000Z", "")
+        : undefined;
+
+    if (validatedData.fecha_entrega_original !== undefined) {
+      const fecha = toMySql(validatedData.fecha_entrega_original)!;
+      updateFields.push("fecha_entrega_original = ?");
+      updateValues.push(fecha);
+    }
+
+    if (validatedData.fecha_entrega_retrasada !== undefined) {
+      const fecha = toMySql(validatedData.fecha_entrega_retrasada)!;
+      updateFields.push("fecha_entrega_retrasada = ?");
+      updateValues.push(fecha);
+      // Si hay retraso y no es cancelada/entregada, marcar estado retrasado
+      if (
+        existingOrderRow.estado !== "cancelado" &&
+        existingOrderRow.estado !== "entregado" &&
+        !validatedData.estado
+      ) {
+        updateFields.push("estado = 'retrasado'");
+      }
+    }
+
+    // Actualizar tipo de entrega y recalcular costo si cambia algo relevante
+    let recalcShipping = false;
+    let tipoEntregaValue: string | undefined;
+    if (validatedData.tipo_entrega !== undefined) {
+      updateFields.push("tipo_entrega = ?");
+      updateValues.push(validatedData.tipo_entrega);
+      tipoEntregaValue = validatedData.tipo_entrega;
+      recalcShipping = true;
+    }
+    if (validatedData.geolocalizacion_habilitada !== undefined) {
+      updateFields.push("geolocalizacion_habilitada = ?");
+      updateValues.push(validatedData.geolocalizacion_habilitada ? 1 : 0);
+      recalcShipping = true;
+    }
+    if (validatedData.latitud !== undefined) {
+      updateFields.push("latitud = ?");
+      updateValues.push(validatedData.latitud);
+      recalcShipping = true;
+    }
+    if (validatedData.longitud !== undefined) {
+      updateFields.push("longitud = ?");
+      updateValues.push(validatedData.longitud);
+      recalcShipping = true;
+    }
+
+    // Método de pago (campos opcionales)
+    if (validatedData.metodo_pago !== undefined) {
+      updateFields.push("metodo_pago = ?");
+      updateValues.push(validatedData.metodo_pago);
+    }
+    if (validatedData.tarjeta?.tipo !== undefined) {
+      updateFields.push("card_type = ?");
+      updateValues.push(validatedData.tarjeta.tipo);
+    }
+    if (validatedData.tarjeta?.marca !== undefined) {
+      updateFields.push("card_brand = ?");
+      updateValues.push(validatedData.tarjeta.marca);
+    }
+    if (validatedData.tarjeta?.numero !== undefined) {
+      updateFields.push("card_last4 = ?");
+      updateValues.push(validatedData.tarjeta.numero.slice(-4));
+    }
+    if (validatedData.pse_reference !== undefined) {
+      updateFields.push("pse_reference = ?");
+      updateValues.push(validatedData.pse_reference);
+    }
+    if (validatedData.cash_on_delivery !== undefined) {
+      updateFields.push("cash_on_delivery = ?");
+      updateValues.push(validatedData.cash_on_delivery ? 1 : 0);
+    }
+
+    // Recalcular costo de envío si corresponde
+    if (recalcShipping) {
+      const shippingUpdateInput: any = {
+        tipo_entrega: validatedData.tipo_entrega ?? "domicilio",
+        geolocalizacion_habilitada: validatedData.geolocalizacion_habilitada ?? false,
+      };
+      if (validatedData.latitud !== undefined) shippingUpdateInput.latitud = validatedData.latitud;
+      if (validatedData.longitud !== undefined) shippingUpdateInput.longitud = validatedData.longitud;
+      const costo_envio = calculateShippingCost(shippingUpdateInput);
+      updateFields.push("costo_envio = ?");
+      updateValues.push(costo_envio);
     }
 
     if (updateFields.length === 0) {
@@ -481,17 +585,7 @@ export async function updateOrder(
 
     // Obtener la orden actualizada
     const [updatedOrder] = await db.query<OrderRow[]>(
-      `SELECT 
-        orden_id,
-        user_id,
-        correo_usuario,
-        direccion,
-        nombre_completo,
-        estado,
-        total,
-        DATE_FORMAT(fecha_pago, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_pago,
-        DATE_FORMAT(fecha_entrega, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_entrega
-      FROM orders WHERE orden_id = ?`,
+      `SELECT ${ORDER_SELECT_FIELDS} FROM orders WHERE orden_id = ?`,
       [id]
     );
 
@@ -616,9 +710,8 @@ export async function getOrderStats(
     const [stats] = await db.query<RowDataPacket[]>(
       `SELECT 
         COUNT(*) as total_ordenes,
-        SUM(CASE WHEN estado = 'pendiente' THEN 1 ELSE 0 END) as pendientes,
-        SUM(CASE WHEN estado = 'procesando' THEN 1 ELSE 0 END) as procesando,
-        SUM(CASE WHEN estado = 'enviado' THEN 1 ELSE 0 END) as enviadas,
+        SUM(CASE WHEN estado = 'en_proceso' THEN 1 ELSE 0 END) as en_proceso,
+        SUM(CASE WHEN estado = 'retrasado' THEN 1 ELSE 0 END) as retrasadas,
         SUM(CASE WHEN estado = 'entregado' THEN 1 ELSE 0 END) as entregadas,
         SUM(CASE WHEN estado = 'cancelado' THEN 1 ELSE 0 END) as canceladas,
         COALESCE(SUM(total), 0) as total_gastado,

@@ -5,16 +5,15 @@ import { z } from 'zod';
 
 // Lista de estados válidos de una orden.
 // Se usa para validar entrada y controlar el flujo del estado.
-const ESTADOS_VALIDOS = ['pendiente', 'procesando', 'enviado', 'entregado', 'cancelado'] as const;
+const ESTADOS_VALIDOS = ['en_proceso', 'cancelado', 'retrasado', 'entregado'] as const;
 // Tipo derivado de la lista de estados para mayor seguridad en el código.
 type EstadoOrden = typeof ESTADOS_VALIDOS[number];
 
 // Mapa de transiciones válidas entre estados.
 // Permite verificar si una transición solicitada está permitida según el estado actual.
 const TRANSICIONES_VALIDAS: Record<EstadoOrden, EstadoOrden[]> = {
-  pendiente: ['procesando', 'cancelado'],
-  procesando: ['enviado', 'cancelado'],
-  enviado: ['entregado'],
+  en_proceso: ['retrasado', 'entregado', 'cancelado'],
+  retrasado: ['entregado', 'cancelado'],
   entregado: [], // Estado final
   cancelado: [], // Estado final
 };
@@ -24,7 +23,8 @@ const TRANSICIONES_VALIDAS: Record<EstadoOrden, EstadoOrden[]> = {
 const updateStatusSchema = z.object({
   estado: z.enum(ESTADOS_VALIDOS),
   motivo: z.string().min(1).max(500).optional(),
-  fecha_entrega: z.string().datetime().optional(),
+  fecha_entrega_original: z.string().datetime().optional(),
+  fecha_entrega_retrasada: z.string().datetime().optional(),
 });
 
 // Esquema para validar y transformar el parámetro ID a número.
@@ -131,7 +131,8 @@ export async function updateOrderStatus(req: Request, res: Response): Promise<Re
         estado,
         total,
         DATE_FORMAT(fecha_pago, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_pago,
-        DATE_FORMAT(fecha_entrega, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_entrega
+        DATE_FORMAT(fecha_entrega_original, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_entrega_original,
+        DATE_FORMAT(fecha_entrega_retrasada, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_entrega_retrasada
       FROM orders WHERE orden_id = ?`,
       [id]
     );

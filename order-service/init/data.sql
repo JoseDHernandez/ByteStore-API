@@ -47,12 +47,24 @@ CREATE TABLE IF NOT EXISTS orders (
     orden_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id VARCHAR(255) NOT NULL COMMENT 'ID del usuario que realizó la orden',
     correo_usuario VARCHAR(300) NOT NULL COMMENT 'Email del usuario',
-    direccion TEXT NOT NULL COMMENT 'Dirección de entrega',
+    direccion TEXT NOT NULL COMMENT 'Dirección de entrega (manual si no hay geolocalización)',
     nombre_completo VARCHAR(200) NOT NULL COMMENT 'Nombre completo del cliente',
-    estado ENUM('pendiente', 'procesando', 'enviado', 'entregado', 'cancelado') DEFAULT 'pendiente' COMMENT 'Estado actual de la orden',
-    total DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT 'Total de la orden',
+    estado ENUM('en_proceso', 'cancelado', 'retrasado', 'entregado') DEFAULT 'en_proceso' COMMENT 'Estado actual de la orden',
+    total DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT 'Total de la orden (incluye costo de envío si aplica)',
     fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha y hora del pago',
-    fecha_entrega TIMESTAMP NULL COMMENT 'Fecha estimada/real de entrega',
+    fecha_entrega_original TIMESTAMP NULL COMMENT 'Fecha de entrega original (estimada)',
+    fecha_entrega_retrasada TIMESTAMP NULL COMMENT 'Fecha de entrega con retraso',
+    tipo_entrega ENUM('domicilio', 'recoger') NOT NULL DEFAULT 'domicilio' COMMENT 'Tipo de entrega',
+    costo_envio DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT 'Costo de envío calculado',
+    geolocalizacion_habilitada TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Bandera de uso de geolocalización',
+    latitud DECIMAL(9,6) NULL COMMENT 'Latitud del usuario (si geolocalización habilitada)',
+    longitud DECIMAL(9,6) NULL COMMENT 'Longitud del usuario (si geolocalización habilitada)',
+    metodo_pago ENUM('tarjeta', 'pse', 'efectivo') NOT NULL DEFAULT 'tarjeta' COMMENT 'Método de pago',
+    card_type ENUM('debito', 'credito') NULL COMMENT 'Tipo de tarjeta',
+    card_brand ENUM('VISA', 'MASTERCARD') NULL COMMENT 'Marca de tarjeta',
+    card_last4 CHAR(4) NULL COMMENT 'Últimos 4 dígitos de la tarjeta',
+    pse_reference VARCHAR(100) NULL COMMENT 'Referencia PSE',
+    cash_on_delivery TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Pago contraentrega',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
@@ -71,6 +83,7 @@ CREATE TABLE IF NOT EXISTS order_products (
     orden_productos_id INT AUTO_INCREMENT PRIMARY KEY,
     orden_id INT NOT NULL COMMENT 'ID de la orden (FK)',
     producto_id INT NOT NULL COMMENT 'ID del producto',
+    product_uid VARCHAR(255) NULL COMMENT 'UID del producto (opcional)',
     nombre VARCHAR(300) NOT NULL COMMENT 'Nombre del producto al momento de la compra',
     precio DECIMAL(10,2) NOT NULL COMMENT 'Precio del producto al momento de la compra',
     descuento DECIMAL(5,2) DEFAULT 0.00 COMMENT 'Descuento aplicado (porcentaje)',
@@ -102,8 +115,8 @@ CREATE TABLE IF NOT EXISTS order_products (
 CREATE TABLE IF NOT EXISTS order_status_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
     orden_id INT NOT NULL COMMENT 'ID de la orden (FK)',
-    estado_anterior ENUM('pendiente', 'procesando', 'enviado', 'entregado', 'cancelado') NOT NULL COMMENT 'Estado anterior de la orden',
-    estado_nuevo ENUM('pendiente', 'procesando', 'enviado', 'entregado', 'cancelado') NOT NULL COMMENT 'Nuevo estado de la orden',
+    estado_anterior ENUM('en_proceso', 'cancelado', 'retrasado', 'entregado') NOT NULL COMMENT 'Estado anterior de la orden',
+    estado_nuevo ENUM('en_proceso', 'cancelado', 'retrasado', 'entregado') NOT NULL COMMENT 'Nuevo estado de la orden',
     motivo TEXT COMMENT 'Motivo del cambio de estado',
     changed_by INT NOT NULL COMMENT 'ID del usuario que realizó el cambio',
     changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha y hora del cambio',
@@ -123,23 +136,23 @@ CREATE TABLE IF NOT EXISTS order_status_history (
 -- =====================================================
 
 -- Insertar órdenes de ejemplo usando usuarios reales y productos del product-service
-INSERT INTO orders (user_id, correo_usuario, direccion, nombre_completo, estado, total, fecha_entrega) VALUES
+INSERT INTO orders (user_id, correo_usuario, direccion, nombre_completo, estado, total, fecha_entrega_original) VALUES
 -- Órdenes entregadas
 ('01991c11-412e-7569-bb85-a4f77ba08bb7', 'maria.lopez@gmail.com', 'Carrera 45 #23-12, Medellín, Colombia', 'María Fernanda López García', 'entregado', 3134550.00, '2024-01-15 14:30:00'),
 ('cliente-002-uuid-7890-123456789012', 'carlos.martinez@hotmail.com', 'Avenida 68 #125-30, Cali, Colombia', 'Carlos Eduardo Martínez Silva', 'entregado', 3799000.00, '2024-01-18 16:45:00'),
 ('cliente-005-uuid-9012-345678901234', 'valentina.torres@gmail.com', 'Calle 85 #47-23, Bogotá, Colombia', 'Valentina Isabel Torres Moreno', 'entregado', 4699000.00, '2024-01-22 11:20:00'),
 
--- Órdenes enviadas
-('cliente-003-uuid-3456-789012345678', 'alejandra.rodriguez@yahoo.com', 'Calle 50 #12-34, Barranquilla, Colombia', 'Alejandra Sofía Rodríguez Peña', 'enviado', 5899000.00, '2024-01-25 10:00:00'),
-('cliente-007-uuid-5678-901234567890', 'isabella.herrera@hotmail.com', 'Carrera 11 #93-45, Medellín, Colombia', 'Isabella María Herrera Castro', 'enviado', 4099000.00, '2024-01-26 15:30:00'),
+-- Órdenes en proceso (antes "enviadas")
+('cliente-003-uuid-3456-789012345678', 'alejandra.rodriguez@yahoo.com', 'Calle 50 #12-34, Barranquilla, Colombia', 'Alejandra Sofía Rodríguez Peña', 'en_proceso', 5899000.00, '2024-01-25 10:00:00'),
+('cliente-007-uuid-5678-901234567890', 'isabella.herrera@hotmail.com', 'Carrera 11 #93-45, Medellín, Colombia', 'Isabella María Herrera Castro', 'en_proceso', 4099000.00, '2024-01-26 15:30:00'),
 
--- Órdenes en procesamiento
-('cliente-004-uuid-6789-012345678901', 'diego.gonzalez@outlook.com', 'Carrera 15 #28-45, Bucaramanga, Colombia', 'Diego Andrés González Vargas', 'procesando', 4499000.00, NULL),
-('cliente-006-uuid-2345-678901234567', 'sebastian.jimenez@gmail.com', 'Avenida 19 #104-62, Bogotá, Colombia', 'Sebastián Camilo Jiménez Rojas', 'procesando', 3999000.00, NULL),
+-- Órdenes en proceso (antes "procesando")
+('cliente-004-uuid-6789-012345678901', 'diego.gonzalez@outlook.com', 'Carrera 15 #28-45, Bucaramanga, Colombia', 'Diego Andrés González Vargas', 'en_proceso', 4499000.00, NULL),
+('cliente-006-uuid-2345-678901234567', 'sebastian.jimenez@gmail.com', 'Avenida 19 #104-62, Bogotá, Colombia', 'Sebastián Camilo Jiménez Rojas', 'en_proceso', 3999000.00, NULL),
 
--- Órdenes pendientes
-('cliente-008-uuid-8901-234567890123', 'mateo.vasquez@yahoo.com', 'Calle 127 #15-78, Bogotá, Colombia', 'Mateo Alejandro Vásquez Luna', 'pendiente', 3269000.00, NULL),
-('01991c11-412e-7569-bb85-a4f77ba08bb7', 'maria.lopez@gmail.com', 'Carrera 45 #23-12, Medellín, Colombia', 'María Fernanda López García', 'pendiente', 7598000.00, NULL),
+-- Órdenes en proceso (antes "pendiente")
+('cliente-008-uuid-8901-234567890123', 'mateo.vasquez@yahoo.com', 'Calle 127 #15-78, Bogotá, Colombia', 'Mateo Alejandro Vásquez Luna', 'en_proceso', 3269000.00, NULL),
+('01991c11-412e-7569-bb85-a4f77ba08bb7', 'maria.lopez@gmail.com', 'Carrera 45 #23-12, Medellín, Colombia', 'María Fernanda López García', 'en_proceso', 7598000.00, NULL),
 
 -- Órdenes canceladas
 ('cliente-002-uuid-7890-123456789012', 'carlos.martinez@hotmail.com', 'Avenida 68 #125-30, Cali, Colombia', 'Carlos Eduardo Martínez Silva', 'cancelado', 0.00, NULL),
@@ -212,7 +225,7 @@ SELECT
     AVG(op.precio) as precio_promedio
 FROM order_products op
 JOIN orders o ON op.orden_id = o.orden_id
-WHERE o.estado IN ('procesando', 'enviado', 'entregado')
+WHERE o.estado IN ('en_proceso', 'retrasado', 'entregado')
 GROUP BY op.producto_id, op.nombre, op.marca, op.modelo
 ORDER BY total_vendido DESC;
 
