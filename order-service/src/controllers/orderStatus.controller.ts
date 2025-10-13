@@ -81,12 +81,20 @@ export async function updateOrderStatus(req: Request, res: Response): Promise<Re
     const updateFields: string[] = ['estado = ?'];
     const updateValues: any[] = [nuevoEstado];
 
-    // Si se marca como entregado, establecer fecha de entrega
+    const toMySql = (iso?: string) =>
+      iso ? iso.replace('T', ' ').replace('.000Z', '') : undefined;
+
+    // Si se marca como retrasado, establecer fecha de entrega retrasada
+    if (nuevoEstado === 'retrasado' && validatedData.fecha_entrega_retrasada) {
+      updateFields.push('fecha_entrega_retrasada = ?');
+      updateValues.push(toMySql(validatedData.fecha_entrega_retrasada));
+    }
+
+    // Si se marca como entregado, establecer fecha de entrega (retrasada si hubo retraso)
     if (nuevoEstado === 'entregado') {
-      updateFields.push('fecha_entrega = ?');
-      const fechaEntregaIso = validatedData.fecha_entrega || new Date().toISOString();
-      const fechaEntregaMysql = fechaEntregaIso.replace('T', ' ').replace('.000Z', '');
-      updateValues.push(fechaEntregaMysql);
+      const fechaFinalIso = validatedData.fecha_entrega_retrasada || new Date().toISOString();
+      updateFields.push('fecha_entrega_retrasada = ?');
+      updateValues.push(toMySql(fechaFinalIso));
     }
 
     updateValues.push(id);

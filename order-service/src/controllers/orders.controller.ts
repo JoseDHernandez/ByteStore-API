@@ -282,7 +282,7 @@ export async function getOrders(
           ${ORDER_PRODUCTS_SELECT_FIELDS}
         FROM order_products 
         WHERE orden_id = ?
-        ORDER BY orden_productos_id`,
+        ORDER BY precio ASC, descuento DESC`,
         [order.orden_id]
       );
       ordersWithProducts.push({
@@ -370,7 +370,7 @@ export async function getOrderById(
         ${ORDER_PRODUCTS_SELECT_FIELDS}
       FROM order_products 
       WHERE orden_id = ?
-      ORDER BY orden_productos_id`,
+      ORDER BY descuento DESC, precio ASC`,
       [id]
     );
 
@@ -500,19 +500,10 @@ export async function updateOrder(
     }
     const [products] = await db.query<OrderProductRow[]>(
       `SELECT 
-        orden_productos_id,
-        producto_id,
-        nombre,
-        precio,
-        descuento,
-        marca,
-        modelo,
-        cantidad,
-        imagen,
-        (precio * cantidad * (1 - descuento/100)) as subtotal
+        ${ORDER_PRODUCTS_SELECT_FIELDS}
       FROM order_products 
       WHERE orden_id = ?
-      ORDER BY orden_productos_id`,
+      ORDER BY descuento DESC, precio ASC`,
       [id]
     );
 
