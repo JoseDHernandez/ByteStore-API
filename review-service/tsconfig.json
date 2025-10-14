@@ -1,6 +1,6 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
-  "extends": "@tsconfig/node-lts/tsconfig.json",
+  "extends": "./node_modules/@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
     // File Layout
     // "rootDir": "./src",
@@ -29,13 +29,7 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
 
-    // Style Options
-    // "noImplicitReturns": true,
-    // "noImplicitOverride": true,
-    // "noUnusedLocals": true,
-    // "noUnusedParameters": true,
-    // "noFallthroughCasesInSwitch": true,
-    // "noPropertyAccessFromIndexSignature": true,
+    
 
     // Recommended Options
     "strict": true,

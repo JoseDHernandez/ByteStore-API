@@ -6,7 +6,7 @@ import {
   updateReview,
   deleteReview,
 } from "../controllers/reviews.controller.ts";
-import { authMiddleware, canAccessResource } from "../middleware/auth.ts";
+import { authMiddleware } from "../middleware/auth.ts";
 
 const router = Router();
 
@@ -20,9 +20,9 @@ router.post('/', authMiddleware, createReview);
 router.get('/:id', getReviewById);
 
 // PUT /:id - Actualizar review (solo propietario o admin)
-router.put('/:id', authMiddleware, canAccessResource, updateReview);
+router.put('/:id', authMiddleware, updateReview);
 
 // DELETE /:id - Eliminar review (solo propietario o admin)
-router.delete('/:id', authMiddleware, canAccessResource, deleteReview);
+router.delete('/:id', authMiddleware, deleteReview);
 
 export default router;

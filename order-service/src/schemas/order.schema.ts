@@ -20,7 +20,12 @@ export const createOrderSchema = z.object({
     .regex(
       /^[A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s\.,#°-]+$/,
       "La dirección contiene caracteres no válidos"
-    ),
+    )
+    .optional(),
+  tipo_entrega: z.enum(["domicilio", "recoger"]).default("domicilio"),
+  geolocalizacion_habilitada: z.boolean().default(false),
+  latitud: z.number().optional(),
+  longitud: z.number().optional(),
   nombre_completo: z
     .string()
     .trim()
@@ -30,6 +35,18 @@ export const createOrderSchema = z.object({
       /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/,
       "El nombre solo puede contener letras y espacios"
     ),
+  metodo_pago: z.enum(["tarjeta", "pse", "efectivo"]).default("tarjeta"),
+  tarjeta: z
+    .object({
+      tipo: z.enum(["debito", "credito"]),
+      marca: z.enum(["VISA", "MASTERCARD"]),
+      numero: z
+        .string()
+        .regex(/^[0-9]{12,19}$/i, "El número de tarjeta debe tener 12-19 dígitos"),
+    })
+    .optional(),
+  pse_reference: z.string().trim().max(100).optional(),
+  cash_on_delivery: z.boolean().optional(),
   productos: z
     .array(
       z.object({
@@ -46,12 +63,34 @@ export const createOrderSchema = z.object({
     )
     .min(1, "Debe incluir al menos un producto")
     .max(50, "No se pueden incluir más de 50 productos por orden"),
+}).superRefine((data, ctx) => {
+  // Si geolocalización está habilitada debe incluir latitud y longitud
+  if (data.geolocalizacion_habilitada) {
+    if (typeof data.latitud !== 'number' || typeof data.longitud !== 'number') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['latitud'],
+        message: 'Debe proporcionar latitud y longitud cuando la geolocalización está habilitada',
+      });
+    }
+  }
+  // Para entrega a domicilio: requiere dirección si no hay geolocalización válida
+  if (data.tipo_entrega === 'domicilio') {
+    const hasGeo = !!data.geolocalizacion_habilitada && typeof data.latitud === 'number' && typeof data.longitud === 'number';
+    if (!hasGeo && !data.direccion) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['direccion'],
+        message: 'Para entrega a domicilio sin geolocalización, la dirección es requerida',
+      });
+    }
+  }
 });
 
 // Esquema para actualizar una orden
 export const updateOrderSchema = z.object({
   estado: z
-    .enum(["pendiente", "procesando", "enviado", "entregado", "cancelado"])
+    .enum(["en_proceso", "cancelado", "retrasado", "entregado"])
     .optional(),
   direccion: z
     .string()
@@ -63,10 +102,41 @@ export const updateOrderSchema = z.object({
       "La dirección contiene caracteres no válidos"
     )
     .optional(),
-  fecha_entrega: z
+  fecha_entrega_original: z
     .string()
     .datetime({ message: "Formato de fecha inválido. Use formato ISO 8601" })
     .optional(),
+  fecha_entrega_retrasada: z
+    .string()
+    .datetime({ message: "Formato de fecha inválido. Use formato ISO 8601" })
+    .optional(),
+  tipo_entrega: z.enum(["domicilio", "recoger"]).optional(),
+  geolocalizacion_habilitada: z.boolean().optional(),
+  latitud: z.number().optional(),
+  longitud: z.number().optional(),
+  metodo_pago: z.enum(["tarjeta", "pse", "efectivo"]).optional(),
+  tarjeta: z
+    .object({
+      tipo: z.enum(["debito", "credito"]),
+      marca: z.enum(["VISA", "MASTERCARD"]),
+      numero: z
+        .string()
+        .regex(/^[0-9]{12,19}$/i, "El número de tarjeta debe tener 12-19 dígitos"),
+    })
+    .optional(),
+  pse_reference: z.string().trim().max(100).optional(),
+  cash_on_delivery: z.boolean().optional(),
+}).superRefine((data, ctx) => {
+  // Si geolocalización está habilitada en actualización, exigir lat/long
+  if (data.geolocalizacion_habilitada) {
+    if (typeof data.latitud !== 'number' || typeof data.longitud !== 'number') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['latitud'],
+        message: 'Debe proporcionar latitud y longitud cuando habilita geolocalización',
+      });
+    }
+  }
 });
 
 // Esquema para parámetros de ID de orden
@@ -85,7 +155,7 @@ export const ordersQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(20),
   user_id: z.string().trim().optional(),
   estado: z
-    .enum(["pendiente", "procesando", "enviado", "entregado", "cancelado"])
+    .enum(["en_proceso", "cancelado", "retrasado", "entregado"])
     .optional(),
   fecha_desde: z
     .string()
