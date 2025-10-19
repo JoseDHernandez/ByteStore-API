@@ -44,7 +44,7 @@ export const login = async (req: Request, res: Response) => {
         role: userData[0].role,
         token,
       };
-      return res.status(200).json({ data: dto });
+      return res.status(200).json({ ...dto });
     }
     return res.status(404).json({ message: "User not found" });
   } catch (error) {
@@ -99,9 +99,7 @@ export const register = async (req: Request, res: Response) => {
         id: userData[0].id,
         role: userData[0].role,
       };
-      return res
-        .status(201)
-        .json({ message: "The user was registered", data: Dto });
+      return res.status(201).json({ ...Dto });
     }
     return res
       .status(400)

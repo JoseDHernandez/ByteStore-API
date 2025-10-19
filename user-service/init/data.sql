@@ -1,4 +1,5 @@
 alter database users character set utf8mb4 collate utf8mb4_spanish2_ci;
+use users;
 create table `roles` (
     id int not null auto_increment,
     name varchar(50) not null,
@@ -14,9 +15,6 @@ create table `users` (
     primary key(id),
     constraint FK_role foreign key (`role`) references roles (`id`) on update cascade
     );
-
-alter table `users` convert to character set utf8mb4 collate utf8mb4_spanish2_ci;
-alter table `roles` convert to character set utf8mb4 collate utf8mb4_spanish2_ci;
 
 insert into roles (name) values ('Cliente');
 insert into roles (name)  values ('Administrador');
