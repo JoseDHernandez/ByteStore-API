@@ -217,3 +217,88 @@ Para eliminar un pedido existente.
   "message": "Orden eliminada exitosamente"
 }
 ```
+
+---
+
+## Entrega y geolocalización
+
+Este servicio soporta entrega a domicilio y recogida en tienda, con validaciones condicionales y cálculo automático del costo de envío.
+
+- Documentación completa: `docs/geolocalizacion.md`
+- Reglas clave:
+  - Si `geolocalizacion_habilitada` es `true`, se requieren `latitud` y `longitud`.
+  - Para `tipo_entrega = "domicilio"` sin geolocalización válida, `direccion` es requerida.
+  - El costo de envío se calcula según `tipo_entrega` y distancia (Haversine).
+
+### Ejemplos rápidos (curl)
+
+- Crear orden con entrega a domicilio (dirección sin geolocalización):
+
+```bash
+curl -X POST "http://localhost:3004/" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "USER_UUID",
+    "correo_usuario": "usuario@example.com",
+    "nombre_completo": "Nombre Apellido",
+    "tipo_entrega": "domicilio",
+    "direccion": "Calle 123 #45-67, Ciudad",
+    "metodo_pago": "tarjeta",
+    "tarjeta": { "tipo": "debito", "marca": "VISA", "numero": "4111111111111111" },
+    "productos": [{ "producto_id": 1, "cantidad": 1 }]
+  }'
+```
+
+- Crear orden con entrega a domicilio usando geolocalización:
+
+```bash
+curl -X POST "http://localhost:3004/" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "USER_UUID",
+    "correo_usuario": "usuario@example.com",
+    "nombre_completo": "Nombre Apellido",
+    "tipo_entrega": "domicilio",
+    "geolocalizacion_habilitada": true,
+    "latitud": 6.25184,
+    "longitud": -75.56359,
+    "metodo_pago": "pse",
+    "pse_reference": "REF-123456",
+    "productos": [{ "producto_id": 2, "cantidad": 2 }]
+  }'
+```
+
+- Crear orden para recoger en tienda (sin costo de envío):
+
+```bash
+curl -X POST "http://localhost:3004/" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "USER_UUID",
+    "correo_usuario": "usuario@example.com",
+    "nombre_completo": "Nombre Apellido",
+    "tipo_entrega": "recoger",
+    "metodo_pago": "efectivo",
+    "cash_on_delivery": true,
+    "productos": [{ "producto_id": 3, "cantidad": 1 }]
+  }'
+```
+
+- Actualizar una orden para habilitar geolocalización y recalcular envío:
+
+```bash
+curl -X PUT "http://localhost:3004/123" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tipo_entrega": "domicilio",
+    "geolocalizacion_habilitada": true,
+    "latitud": 6.25184,
+    "longitud": -75.56359
+  }'
+```
+
+> Nota: Todos los endpoints requieren encabezado `Authorization: Bearer <TOKEN>`.

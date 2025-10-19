@@ -1,0 +1,1 @@
+export const ISO_DATE_FORMAT = "%Y-%m-%dT%H:%i:%s.000Z";

@@ -1,31 +1,11 @@
-export interface Review {
-  calificacion_id: number;
-  producto_id: number;
-  usuario_id: string;
-  calificacion: number;
-  comentario: string;
-  fecha: string; // ISO format
-}
-
-export interface ReviewCreateDTO {
-  producto_id: number;
-  calificacion: number;
-  comentario?: string;
-}
-
-export interface ReviewUpdateDTO {
-  calificacion?: number;
-  comentario?: string;
-}
-
 export interface ReviewResponseDTO {
-  calificacion_id: number;
-  producto_id: number;
-  usuario_id: string;
-  nombre_usuario: string;
-  calificacion: number;
-  comentario: string;
-  fecha: string;
+  id: number;
+  product_id: number;
+  user_id: string;
+  user_name: string;
+  qualification: number;
+  comment: string;
+  review_date: string; // ISO format
 }
 
 export interface ReviewsPaginatedResponse {

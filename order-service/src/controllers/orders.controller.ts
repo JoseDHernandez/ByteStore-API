@@ -13,14 +13,19 @@ import {
   orderIdSchema,
   ordersQuerySchema,
 } from "../schemas/order.schema.js";
+import { ORDER_PRODUCTS_SELECT_FIELDS, ORDER_SELECT_FIELDS } from "../utils/sql.js";
+import { computePagination } from "../utils/pagination.js";
+import { calculateShippingCost } from "../utils/shipping.js";
 
+// Tipos auxiliares: filas de MySQL enriquecidas con el modelo del dominio
 type OrderRow = RowDataPacket & Order;
 type OrderProductRow = RowDataPacket & OrderProduct;
 
 /**
- * Crear una nueva orden
- * @param req - Request con datos de la orden
- * @param res - Response con la orden creada
+ * Crea una orden y sus productos en transacción.
+ * Verifica permisos del usuario y retorna la orden completa.
+ * @param req Request con datos de la orden
+ * @param res Response con la orden creada
  */
 export async function createOrder(
   req: Request,
@@ -29,31 +34,38 @@ export async function createOrder(
   try {
     // Validar datos de entrada
     const validatedData = createOrderSchema.parse(req.body);
-    const usuario_id = req.auth!.id;
+    // Normalizar el identificador del usuario autenticado a número
+    const usuario_id = Number(req.auth!.id);
+    // Asegurar que el user_id de la solicitud esté en número para comparaciones y escrituras
+    const validatedUserId =
+      typeof validatedData.user_id === "string"
+        ? Number(validatedData.user_id)
+        : validatedData.user_id;
+    // Bandera de rol administrador para controlar permisos en el flujo
     const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     // Verificar que el usuario puede crear la orden (debe ser el mismo usuario o admin)
-    if (!isAdmin && validatedData.user_id !== usuario_id) {
+    if (!isAdmin && validatedUserId !== usuario_id) {
       return res.status(403).json({
         message: "No tienes permisos para crear una orden para otro usuario",
       });
     }
 
-    // Iniciar transacción
+    // Iniciar transacción para garantizar atomicidad entre orden y productos
     await db.query("START TRANSACTION");
 
     try {
-      // Calcular el total de la orden
+      // Calcular el total de la orden (acumulado de subtotales)
       let total = 0;
-      const productDetails: any[] = [];
+      const productDetails: any[] = []; // Detalles de productos que se insertarán en la tabla intermedia
 
-      // Obtener detalles de cada producto (simulado - en un entorno real consultaríamos el servicio de productos)
+      // Obtener detalles de cada producto (simulado). En producción se consultaría el servicio de productos.
       for (const producto of validatedData.productos) {
         // Por ahora, usamos precios simulados basados en el producto_id
         const precio = Math.floor(Math.random() * 2000000) + 500000; // Precio entre 500k y 2.5M
         const descuento = Math.floor(Math.random() * 20); // Descuento entre 0% y 20%
-        const subtotal = precio * producto.cantidad * (1 - descuento / 100);
-        total += subtotal;
+        const subtotal = precio * producto.cantidad * (1 - descuento / 100); // Nota: considerar manejo de decimales/impuestos
+        total += subtotal; // acumulamos
 
         productDetails.push({
           producto_id: producto.producto_id,
@@ -66,19 +78,62 @@ export async function createOrder(
           ],
           modelo: `Modelo-${producto.producto_id}-${new Date().getFullYear()}`,
           imagen: `https://example.com/images/producto-${producto.producto_id}.jpg`,
+          product_uid: `PRD-${producto.producto_id}`,
         });
       }
 
+      // Ordenar productos de menor a mayor precio (requisito)
+      productDetails.sort((a, b) => a.precio - b.precio);
+
+      // Calcular costo de envío
+      const shippingInput: any = {
+        tipo_entrega: validatedData.tipo_entrega ?? "domicilio",
+        geolocalizacion_habilitada: validatedData.geolocalizacion_habilitada ?? false,
+      };
+      if (validatedData.latitud !== undefined) shippingInput.latitud = validatedData.latitud;
+      if (validatedData.longitud !== undefined) shippingInput.longitud = validatedData.longitud;
+      const costo_envio = calculateShippingCost(shippingInput);
+
+      // Ajustar total final incluyendo envío
+      total = Math.round(total + costo_envio);
+
+      // Derivar campos de pago
+      const metodo_pago = validatedData.metodo_pago ?? "tarjeta";
+      const card_type = validatedData.tarjeta?.tipo ?? null;
+      const card_brand = validatedData.tarjeta?.marca ?? null;
+      const card_last4 = validatedData.tarjeta?.numero
+        ? validatedData.tarjeta.numero.slice(-4)
+        : null;
+      const pse_reference = validatedData.pse_reference ?? null;
+      const cash_on_delivery = validatedData.cash_on_delivery ? 1 : 0;
+
       // Crear la orden
       const [orderResult] = await db.query<ResultSetHeader>(
-        `INSERT INTO orders (user_id, correo_usuario, direccion, nombre_completo, estado, total, fecha_pago) 
-         VALUES (?, ?, ?, ?, 'pendiente', ?, NOW())`,
+        `INSERT INTO orders (
+           user_id, correo_usuario, direccion, nombre_completo,
+           estado, total, fecha_pago,
+           fecha_entrega_original,
+           tipo_entrega, costo_envio, geolocalizacion_habilitada, latitud, longitud,
+           metodo_pago, card_type, card_brand, card_last4, pse_reference, cash_on_delivery
+         ) 
+         VALUES (?, ?, ?, ?, 'en_proceso', ?, NOW(), DATE_ADD(NOW(), INTERVAL 3 DAY), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          validatedData.user_id,
+          validatedUserId,
           validatedData.correo_usuario,
           validatedData.direccion,
           validatedData.nombre_completo,
           total,
+          validatedData.tipo_entrega ?? "domicilio",
+          costo_envio,
+          (validatedData.geolocalizacion_habilitada ?? false) ? 1 : 0,
+          validatedData.latitud ?? null,
+          validatedData.longitud ?? null,
+          metodo_pago,
+          card_type,
+          card_brand,
+          card_last4,
+          pse_reference,
+          cash_on_delivery,
         ]
       );
 
@@ -87,11 +142,12 @@ export async function createOrder(
       // Insertar productos de la orden
       for (const product of productDetails) {
         await db.query(
-          `INSERT INTO order_products (orden_id, producto_id, nombre, precio, descuento, marca, modelo, cantidad, imagen)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO order_products (orden_id, producto_id, product_uid, nombre, precio, descuento, marca, modelo, cantidad, imagen)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             ordenId,
             product.producto_id,
+            product.product_uid,
             product.nombre,
             product.precio,
             product.descuento,
@@ -103,27 +159,17 @@ export async function createOrder(
         );
       }
 
-      // Confirmar transacción
+      // Confirmar transacción: persistir cambios de orden y productos
       await db.query("COMMIT");
 
       // Obtener la orden creada con sus productos
       const [newOrder] = await db.query<OrderRow[]>(
-        `SELECT 
-          orden_id,
-          user_id,
-          correo_usuario,
-          direccion,
-          nombre_completo,
-          estado,
-          total,
-          DATE_FORMAT(fecha_pago, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_pago,
-          DATE_FORMAT(fecha_entrega, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_entrega
-        FROM orders WHERE orden_id = ?`,
+        `SELECT ${ORDER_SELECT_FIELDS} FROM orders WHERE orden_id = ?`,
         [ordenId]
       );
 
       const [orderProducts] = await db.query<OrderProductRow[]>(
-        "SELECT * FROM order_products WHERE orden_id = ?",
+        `SELECT ${ORDER_PRODUCTS_SELECT_FIELDS} FROM order_products WHERE orden_id = ? ORDER BY precio ASC, descuento DESC`,
         [ordenId]
       );
 
@@ -157,9 +203,10 @@ export async function createOrder(
 }
 
 /**
- * Obtener órdenes con paginación y filtros
- * @param req - Request con parámetros de consulta
- * @param res - Response con órdenes paginadas
+ * Lista órdenes con filtros y paginación.
+ * Incluye productos por orden.
+ * @param req Request con parámetros de consulta
+ * @param res Response con órdenes paginadas
  */
 export async function getOrders(
   req: Request,
@@ -179,26 +226,22 @@ export async function getOrders(
       order,
     } = validatedQuery;
 
-    const usuario_id = req.auth!.id;
+    // Normalizar el identificador del usuario autenticado a número
+    const usuario_id = Number(req.auth!.id);
     const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
-    // Construir la consulta base
+    // Construir la consulta base (se filtra con condiciones dinámicas)
+    // Consulta base: se complementará con condiciones dinámicas
     let baseQuery = `
       SELECT 
-        orden_id,
-        user_id,
-        correo_usuario,
-        direccion,
-        nombre_completo,
-        estado,
-        total,
-        DATE_FORMAT(fecha_pago, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_pago,
-        DATE_FORMAT(fecha_entrega, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_entrega
+        ${ORDER_SELECT_FIELDS}
       FROM orders
       WHERE 1=1
     `;
 
+    // Consulta de conteo para cálculo de páginas
     let countQuery = "SELECT COUNT(*) as total FROM orders WHERE 1=1";
+    // Acumulador de parámetros para ambas consultas
     const queryParams: any[] = [];
 
     // Si no es admin, solo puede ver sus propias órdenes
@@ -253,12 +296,11 @@ export async function getOrders(
     const total = totalResult[0].total;
 
     // Calcular paginación
-    const pages = Math.ceil(total / limit);
-    const currentPage = Math.max(1, Math.min(page, pages));
-    const offset = (currentPage - 1) * limit;
-    const first = 1;
-    const prev = currentPage > 1 ? currentPage - 1 : null;
-    const next = currentPage < pages ? currentPage + 1 : null;
+    const { pages, currentPage, offset, first, prev, next } = computePagination(
+      total,
+      limit,
+      page
+    );
 
     // Aplicar paginación
     baseQuery += " LIMIT ? OFFSET ?";
@@ -267,11 +309,15 @@ export async function getOrders(
     // Ejecutar consulta
     const [orders] = await db.query<OrderRow[]>(baseQuery, queryParams);
 
-    // Obtener productos para cada orden
-    const ordersWithProducts: OrderResponseDTO[] = [];
+    // Obtener productos para cada orden (N+1 consultas)
+    const ordersWithProducts: OrderResponseDTO[] = []; // Acumulador de órdenes con sus productos
     for (const order of orders) {
       const [products] = await db.query<OrderProductRow[]>(
-        "SELECT * FROM order_products WHERE orden_id = ?",
+        `SELECT 
+          ${ORDER_PRODUCTS_SELECT_FIELDS}
+        FROM order_products 
+        WHERE orden_id = ?
+        ORDER BY precio ASC, descuento DESC`,
         [order.orden_id]
       );
       ordersWithProducts.push({
@@ -303,9 +349,10 @@ export async function getOrders(
 }
 
 /**
- * Obtener orden por ID
- * @param req - Request con ID de la orden
- * @param res - Response con la orden encontrada
+ * Devuelve una orden y sus productos por ID.
+ * Requiere dueño o ADMINISTRADOR.
+ * @param req Request con ID de la orden
+ * @param res Response con la orden encontrada
  */
 export async function getOrderById(
   req: Request,
@@ -314,34 +361,29 @@ export async function getOrderById(
   try {
     // Validar parámetro ID
     const { id } = orderIdSchema.parse(req.params);
-    const usuario_id = req.auth!.id;
+    // Normalizar el identificador del usuario autenticado a número
+    const usuario_id = Number(req.auth!.id);
+    // Bandera de rol administrador para permisos de lectura
     const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     // Buscar la orden
     const [order] = await db.query<OrderRow[]>(
-      `SELECT 
-        orden_id,
-        user_id,
-        correo_usuario,
-        direccion,
-        nombre_completo,
-        estado,
-        total,
-        DATE_FORMAT(fecha_pago, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_pago,
-        DATE_FORMAT(fecha_entrega, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_entrega
-      FROM orders WHERE orden_id = ?`,
+      `SELECT ${ORDER_SELECT_FIELDS} FROM orders WHERE orden_id = ?`,
       [id]
     );
-    if (!order[0]) {
-      return res.status(404).json({ message: "Orden no encontrada" });
-    }
-
     if (order.length === 0) {
       return res.status(404).json({ message: "Orden no encontrada" });
     }
+    // Tras verificar la existencia, trabajamos con una referencia no nula
+    const orderRow = order[0]!;
+    // Normalizar el tipo del user_id de la orden para comparaciones
+    const orderUserId =
+      typeof orderRow.user_id === "string"
+        ? Number(orderRow.user_id)
+        : orderRow.user_id;
 
     // Verificar permisos (propietario o admin)
-    if (!isAdmin && order[0].user_id !== usuario_id) {
+    if (!isAdmin && orderUserId !== usuario_id) {
       return res.status(403).json({
         message: "No tienes permisos para ver esta orden",
       });
@@ -349,12 +391,16 @@ export async function getOrderById(
 
     // Obtener productos de la orden
     const [products] = await db.query<OrderProductRow[]>(
-      "SELECT * FROM order_products WHERE orden_id = ?",
+      `SELECT 
+        ${ORDER_PRODUCTS_SELECT_FIELDS}
+      FROM order_products 
+      WHERE orden_id = ?
+      ORDER BY descuento DESC, precio ASC`,
       [id]
     );
 
     const response: OrderResponseDTO = {
-      ...order[0],
+      ...orderRow,
       productos: products,
     };
 
@@ -372,9 +418,10 @@ export async function getOrderById(
 }
 
 /**
- * Actualizar orden
- * @param req - Request con ID y datos a actualizar
- * @param res - Response con la orden actualizada
+ * Actualiza campos permitidos de una orden.
+ * Valida permisos y retorna la orden actualizada.
+ * @param req Request con ID y datos a actualizar
+ * @param res Response con la orden actualizada
  */
 export async function updateOrder(
   req: Request,
@@ -384,7 +431,8 @@ export async function updateOrder(
     // Validar parámetro ID y datos
     const { id } = orderIdSchema.parse(req.params);
     const validatedData = updateOrderSchema.parse(req.body);
-    const usuario_id = req.auth!.id;
+    // Normalizar el identificador del usuario autenticado a número
+    const usuario_id = Number(req.auth!.id);
     const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     // Verificar que la orden existe
@@ -393,17 +441,19 @@ export async function updateOrder(
       [id]
     );
 
-    if (!existingOrder[0]) {
-      return res.status(404).json({ message: "Orden no encontrada" });
-    }
-
     if (existingOrder.length === 0) {
       return res.status(404).json({ message: "Orden no encontrada" });
     }
+    // Referencia no nula y normalización del tipo del user_id
+    const existingOrderRow = existingOrder[0]!;
+    const existingOrderUserId =
+      typeof existingOrderRow.user_id === "string"
+        ? Number(existingOrderRow.user_id)
+        : existingOrderRow.user_id;
 
     // Verificar permisos
     const canUpdateStatus = isAdmin;
-    const canUpdateAddress = isAdmin || existingOrder[0].user_id === usuario_id;
+    const canUpdateAddress = isAdmin || existingOrderUserId === usuario_id;
 
     if (validatedData.estado && !canUpdateStatus) {
       return res.status(403).json({
@@ -432,14 +482,93 @@ export async function updateOrder(
       updateValues.push(validatedData.direccion);
     }
 
-    if (validatedData.fecha_entrega !== undefined) {
-      // Convertir ISO a formato MySQL
-      const fechaEntrega = new Date(validatedData.fecha_entrega)
-        .toISOString()
-        .replace("T", " ")
-        .replace(".000Z", "");
-      updateFields.push("fecha_entrega = ?");
-      updateValues.push(fechaEntrega);
+    const toMySql = (iso?: string) =>
+      iso
+        ? new Date(iso).toISOString().replace("T", " ").replace(".000Z", "")
+        : undefined;
+
+    if (validatedData.fecha_entrega_original !== undefined) {
+      const fecha = toMySql(validatedData.fecha_entrega_original)!;
+      updateFields.push("fecha_entrega_original = ?");
+      updateValues.push(fecha);
+    }
+
+    if (validatedData.fecha_entrega_retrasada !== undefined) {
+      const fecha = toMySql(validatedData.fecha_entrega_retrasada)!;
+      updateFields.push("fecha_entrega_retrasada = ?");
+      updateValues.push(fecha);
+      // Si hay retraso y no es cancelada/entregada, marcar estado retrasado
+      if (
+        existingOrderRow.estado !== "cancelado" &&
+        existingOrderRow.estado !== "entregado" &&
+        !validatedData.estado
+      ) {
+        updateFields.push("estado = 'retrasado'");
+      }
+    }
+
+    // Actualizar tipo de entrega y recalcular costo si cambia algo relevante
+    let recalcShipping = false;
+    let tipoEntregaValue: string | undefined;
+    if (validatedData.tipo_entrega !== undefined) {
+      updateFields.push("tipo_entrega = ?");
+      updateValues.push(validatedData.tipo_entrega);
+      tipoEntregaValue = validatedData.tipo_entrega;
+      recalcShipping = true;
+    }
+    if (validatedData.geolocalizacion_habilitada !== undefined) {
+      updateFields.push("geolocalizacion_habilitada = ?");
+      updateValues.push(validatedData.geolocalizacion_habilitada ? 1 : 0);
+      recalcShipping = true;
+    }
+    if (validatedData.latitud !== undefined) {
+      updateFields.push("latitud = ?");
+      updateValues.push(validatedData.latitud);
+      recalcShipping = true;
+    }
+    if (validatedData.longitud !== undefined) {
+      updateFields.push("longitud = ?");
+      updateValues.push(validatedData.longitud);
+      recalcShipping = true;
+    }
+
+    // Método de pago (campos opcionales)
+    if (validatedData.metodo_pago !== undefined) {
+      updateFields.push("metodo_pago = ?");
+      updateValues.push(validatedData.metodo_pago);
+    }
+    if (validatedData.tarjeta?.tipo !== undefined) {
+      updateFields.push("card_type = ?");
+      updateValues.push(validatedData.tarjeta.tipo);
+    }
+    if (validatedData.tarjeta?.marca !== undefined) {
+      updateFields.push("card_brand = ?");
+      updateValues.push(validatedData.tarjeta.marca);
+    }
+    if (validatedData.tarjeta?.numero !== undefined) {
+      updateFields.push("card_last4 = ?");
+      updateValues.push(validatedData.tarjeta.numero.slice(-4));
+    }
+    if (validatedData.pse_reference !== undefined) {
+      updateFields.push("pse_reference = ?");
+      updateValues.push(validatedData.pse_reference);
+    }
+    if (validatedData.cash_on_delivery !== undefined) {
+      updateFields.push("cash_on_delivery = ?");
+      updateValues.push(validatedData.cash_on_delivery ? 1 : 0);
+    }
+
+    // Recalcular costo de envío si corresponde
+    if (recalcShipping) {
+      const shippingUpdateInput: any = {
+        tipo_entrega: validatedData.tipo_entrega ?? "domicilio",
+        geolocalizacion_habilitada: validatedData.geolocalizacion_habilitada ?? false,
+      };
+      if (validatedData.latitud !== undefined) shippingUpdateInput.latitud = validatedData.latitud;
+      if (validatedData.longitud !== undefined) shippingUpdateInput.longitud = validatedData.longitud;
+      const costo_envio = calculateShippingCost(shippingUpdateInput);
+      updateFields.push("costo_envio = ?");
+      updateValues.push(costo_envio);
     }
 
     if (updateFields.length === 0) {
@@ -456,17 +585,7 @@ export async function updateOrder(
 
     // Obtener la orden actualizada
     const [updatedOrder] = await db.query<OrderRow[]>(
-      `SELECT 
-        orden_id,
-        user_id,
-        correo_usuario,
-        direccion,
-        nombre_completo,
-        estado,
-        total,
-        DATE_FORMAT(fecha_pago, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_pago,
-        DATE_FORMAT(fecha_entrega, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_entrega
-      FROM orders WHERE orden_id = ?`,
+      `SELECT ${ORDER_SELECT_FIELDS} FROM orders WHERE orden_id = ?`,
       [id]
     );
 
@@ -474,7 +593,11 @@ export async function updateOrder(
       throw new Error("No se pudo actualizar la orden");
     }
     const [products] = await db.query<OrderProductRow[]>(
-      "SELECT * FROM order_products WHERE orden_id = ?",
+      `SELECT 
+        ${ORDER_PRODUCTS_SELECT_FIELDS}
+      FROM order_products 
+      WHERE orden_id = ?
+      ORDER BY descuento DESC, precio ASC`,
       [id]
     );
 
@@ -512,9 +635,10 @@ export async function updateOrder(
 }
 
 /**
- * Eliminar orden
- * @param req - Request con ID de la orden
- * @param res - Response de confirmación
+ * Elimina una orden.
+ * Solo ADMINISTRADOR.
+ * @param req Request con ID de la orden
+ * @param res Response de confirmación
  */
 export async function deleteOrder(
   req: Request,
@@ -523,7 +647,6 @@ export async function deleteOrder(
   try {
     // Validar parámetro ID
     const { id } = orderIdSchema.parse(req.params);
-    const usuario_id = req.auth!.id;
     const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     // Verificar que la orden existe
@@ -560,16 +683,18 @@ export async function deleteOrder(
 }
 
 /**
- * Obtener estadísticas de órdenes del usuario
- * @param req - Request con datos del usuario
- * @param res - Response con estadísticas
+ * Estadísticas de órdenes y productos más comprados.
+ * Restringe por usuario si no es ADMINISTRADOR.
+ * @param req Request
+ * @param res Response con estadísticas
  */
 export async function getOrderStats(
   req: Request,
   res: Response
 ): Promise<Response | void> {
   try {
-    const usuario_id = req.auth!.id;
+    // Normalizar el identificador del usuario autenticado a número
+    const usuario_id = Number(req.auth!.id);
     const isAdmin = req.auth!.role === "ADMINISTRADOR";
 
     let userCondition = "";
@@ -585,9 +710,8 @@ export async function getOrderStats(
     const [stats] = await db.query<RowDataPacket[]>(
       `SELECT 
         COUNT(*) as total_ordenes,
-        SUM(CASE WHEN estado = 'pendiente' THEN 1 ELSE 0 END) as pendientes,
-        SUM(CASE WHEN estado = 'procesando' THEN 1 ELSE 0 END) as procesando,
-        SUM(CASE WHEN estado = 'enviado' THEN 1 ELSE 0 END) as enviadas,
+        SUM(CASE WHEN estado = 'en_proceso' THEN 1 ELSE 0 END) as en_proceso,
+        SUM(CASE WHEN estado = 'retrasado' THEN 1 ELSE 0 END) as retrasadas,
         SUM(CASE WHEN estado = 'entregado' THEN 1 ELSE 0 END) as entregadas,
         SUM(CASE WHEN estado = 'cancelado' THEN 1 ELSE 0 END) as canceladas,
         COALESCE(SUM(total), 0) as total_gastado,

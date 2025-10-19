@@ -12,6 +12,8 @@ import {
   reviewsQuerySchema,
   productIdSchema,
 } from "../schemas/review.schema.ts";
+import { REVIEW_SELECT_FIELDS } from "../utils/sql.ts";
+import { computePagination } from "../utils/pagination.ts";
 
 type ReviewRow = RowDataPacket & ReviewResponseDTO;
 
@@ -44,7 +46,7 @@ export async function createReview(req: Request, res: Response) {
     //crear usuario
     if (existingUser.length === 0) {
       const [registerUser] = await db.query<ResultSetHeader>(
-        "INSERT INTO users (user_id, user_name) VALUES (?,?)",
+        "INSERT INTO users (id, user_name) VALUES (?,?)",
         [user_id, data.user_name]
       );
     }
@@ -58,12 +60,7 @@ export async function createReview(req: Request, res: Response) {
     // Obtener la reseña creada
     const [newReview] = await db.query<ReviewRow[]>(
       `SELECT 
-        r.id as id,
-        r.product_id as product_id,
-        r.qualification as qualification,
-        r.comment as  comment,
-        DATE_FORMAT(r.review_date, '%Y-%m-%dT%H:%i:%s.000Z') as review_date,
-        u.user_name as user_name
+        ${REVIEW_SELECT_FIELDS}
       FROM reviews as r INNER JOIN users as u ON r.user_id = u.id
       WHERE r.id = ?`,
       [result.insertId]
@@ -106,12 +103,7 @@ export async function getReviews(req: Request, res: Response) {
     // Construir la consulta base
     let baseQuery = `
       SELECT 
-        r.id as id,
-        r.product_id as product_id,
-        r.qualification as qualification,
-        r.comment as  comment,
-        DATE_FORMAT(r.review_date, '%Y-%m-%dT%H:%i:%s.000Z') as review_date,
-        u.user_name as user_name
+        ${REVIEW_SELECT_FIELDS}
       FROM reviews as r INNER JOIN users as u ON r.user_id = u.id 
     `;
 
@@ -158,12 +150,11 @@ export async function getReviews(req: Request, res: Response) {
     const total = totalResult[0]?.total ?? 1;
 
     // Calcular paginación
-    const pages = Math.ceil(total / limit);
-    const currentPage = Math.max(1, Math.min(page, pages));
-    const offset = (currentPage - 1) * limit;
-    const first = 1;
-    const prev = currentPage > 1 ? currentPage - 1 : null;
-    const next = currentPage < pages ? currentPage + 1 : null;
+    const { pages, currentPage, offset, first, prev, next } = computePagination(
+      total,
+      limit,
+      page
+    );
 
     // Aplicar paginación
     baseQuery += " LIMIT ? OFFSET ?";
@@ -202,12 +193,7 @@ export async function getReviewById(req: Request, res: Response) {
     // Buscar la reseña
     const [review] = await db.query<ReviewRow[]>(
       `SELECT 
-        r.id as id,
-        r.product_id as product_id,
-        r.qualification as qualification,
-        r.comment as  comment,
-        DATE_FORMAT(r.review_date, '%Y-%m-%dT%H:%i:%s.000Z') as review_date,
-        u.user_name as user_name
+        ${REVIEW_SELECT_FIELDS}
       FROM reviews as r INNER JOIN users as u ON r.user_id = u.id
       WHERE r.id = ?`,
       [id]
@@ -250,6 +236,18 @@ export async function updateReview(req: Request, res: Response) {
       return res.status(404).json({ message: "Reseña no encontrada" });
     }
 
+    // Validar autorización: solo propietario o administrador
+    const isAdmin = req.auth?.role === "ADMINISTRADOR";
+    const usuario_id = Number(req.auth?.id);
+    const ownerId = existingReview[0]!.user_id
+      ? Number(existingReview[0]!.user_id)
+      : undefined;
+    if (!isAdmin && ownerId !== usuario_id) {
+      return res.status(403).json({
+        message: "No tienes permisos para actualizar esta reseña",
+      });
+    }
+
     // Construir consulta de actualización
     const updateFields: string[] = [];
     const updateValues: any[] = [];
@@ -279,12 +277,7 @@ export async function updateReview(req: Request, res: Response) {
     // Obtener la reseña actualizada
     const [updatedReview] = await db.query<ReviewRow[]>(
       `SELECT 
-        r.id as id,
-        r.product_id as product_id,
-        r.qualification as qualification,
-        r.comment as  comment,
-        DATE_FORMAT(r.review_date, '%Y-%m-%dT%H:%i:%s.000Z') as review_date,
-        u.user_name as user_name
+        ${REVIEW_SELECT_FIELDS}
       FROM reviews as r INNER JOIN users as u ON r.user_id = u.id
       WHERE r.id = ?`,
       [id]
@@ -321,6 +314,18 @@ export async function deleteReview(req: Request, res: Response) {
       return res.status(404).json({ message: "Reseña no encontrada" });
     }
 
+    // Validar autorización: solo propietario o administrador
+    const isAdmin = req.auth?.role === "ADMINISTRADOR";
+    const usuario_id = Number(req.auth?.id);
+    const ownerId = existingReview[0]!.user_id
+      ? Number(existingReview[0]!.user_id)
+      : undefined;
+    if (!isAdmin && ownerId !== usuario_id) {
+      return res.status(403).json({
+        message: "No tienes permisos para eliminar esta reseña",
+      });
+    }
+
     // Eliminar la reseña
     await db.query("DELETE FROM reviews WHERE id = ?", [id]);
 
@@ -348,12 +353,7 @@ export async function getReviewsByProduct(req: Request, res: Response) {
     // Consulta base para reseñas del producto
     let baseQuery = `
       SELECT 
-        r.id as id,
-        r.product_id as product_id,
-        r.qualification as qualification,
-        r.comment as  comment,
-        DATE_FORMAT(r.review_date, '%Y-%m-%dT%H:%i:%s.000Z') as review_date,
-        u.user_name as user_name
+        ${REVIEW_SELECT_FIELDS}
       FROM reviews as r INNER JOIN users as u ON r.user_id = u.id
       WHERE r.product_id = ? 
     `;
@@ -373,12 +373,11 @@ export async function getReviewsByProduct(req: Request, res: Response) {
     const total = totalResult[0]?.total ?? 1;
 
     // Calcular paginación
-    const pages = Math.ceil(total / limit);
-    const currentPage = Math.max(1, Math.min(page, pages));
-    const offset = (currentPage - 1) * limit;
-    const first = 1;
-    const prev = currentPage > 1 ? currentPage - 1 : null;
-    const next = currentPage < pages ? currentPage + 1 : null;
+    const { pages, currentPage, offset, first, prev, next } = computePagination(
+      total,
+      limit,
+      page
+    );
 
     // Aplicar paginación
     baseQuery += " LIMIT ? OFFSET ?";
