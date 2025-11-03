@@ -1,4 +1,5 @@
-alter database users character set utf8mb4 collate utf8mb4_spanish2_ci;
+CREATE DATABASE IF NOT EXISTS users CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+alter database users character set utf8mb4 collate utf8mb4_unicode_ci;
 use users;
 create table `roles` (
     id int not null auto_increment,
