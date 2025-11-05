@@ -105,6 +105,17 @@ export class ProductsController {
   getFilters(): Promise<ResponseProductFiltersDTO> {
     return this.productsService.getFilters();
   }
+  //Obtener productos similares
+  @Public()
+  @Get(':id/similar')
+  @CacheKey('products_similars')
+  @CacheTTL(600)
+  @Header('Cache-Control', 'public, max-age=600')
+  getSimilarProducts(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ResponseProductDTO[]> {
+    return this.productsService.getSimilarProducts(id);
+  }
   //Obtener productor por Id
   @Public()
   @Get(':id')

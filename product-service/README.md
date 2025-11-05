@@ -21,6 +21,7 @@ La mayoría de las operaciones de este servicio requieren autenticación mediant
   - [Productos](#productos)
     - [Solicitar productos (Publica)](#solicitar-productos-pública)
     - [Obtener un producto por ID (Publica)](#obtener-un-producto-por-id-pública)
+    - [Obtener productos similares por ID (Publica)](#obtener-productos-similares-por-id-pública)
     - [Obtener un producto por lista de IDs (Publica)](#obtener-un-producto-por-lista-de-ids-pública)
     - [Obtener filtros disponibles (Publica)](#obtener-filtros-disponibles-pública)
     - [Crear un producto](#crear-un-producto)
@@ -198,6 +199,209 @@ Obtiene un producto por su ID (numérico).
   }
 }
 ```
+
+---
+
+#### Obtener productos similares por ID (Publica)
+
+Para obtener productos similares, se consideran aquellos que comparten la misma marca, la misma marca de procesador o cantidad de memoria ram. Se excluye el producto original de la lista de resultados y se retornan 6 productos similares (con influencia de aleatoriedad).
+
+**GET** `/:id/similar`
+
+**Respuesta:**
+
+```json
+[
+  {
+    "id": 39,
+    "name": "Lenovo Yoga Slim 7 Intel Core I5 - 16GB",
+    "description": "Aprovecha la máxima libertad ...",
+    "price": 5199000,
+    "discount": 25,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/197531167644-001-750Wx750H.webp",
+    "model": "83CV000KLM",
+    "ram_capacity": 16,
+    "disk_capacity": 1000,
+    "qualification": "0.0",
+    "brand": "LENOVO",
+    "processor": {
+      "brand": "Intel",
+      "family": "Intel Core I5",
+      "model": "125H",
+      "cores": 14,
+      "speed": "Hasta 4.5 GHz con Intel Turbo Boost Technology, 18 MB L3 caché, 14 núcleos, 18 hilos"
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11 Home"
+    },
+    "display": {
+      "size": 14,
+      "resolution": "OLED",
+      "graphics": "Gráficos integrados",
+      "brand": "Intel Graphics"
+    }
+  },
+  {
+    "id": 8,
+    "name": "HP Intel Core I5 - 8GB",
+    "description": "Con el Portátil HP 14-Ep1001la...",
+    "price": 3999000,
+    "discount": 45,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/198415103550-001-750Wx750H.webp",
+    "model": "14-Ep1001la",
+    "ram_capacity": 8,
+    "disk_capacity": 512,
+    "qualification": "0.0",
+    "brand": "HP",
+    "processor": {
+      "brand": "Intel",
+      "family": "Intel Core I5",
+      "model": "125H",
+      "cores": 14,
+      "speed": "Hasta 4.5 GHz con Intel Turbo Boost Technology, 18 MB L3 caché, 14 núcleos, 18 hilos"
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11"
+    },
+    "display": {
+      "size": 14,
+      "resolution": "Full HD",
+      "graphics": "Gráficos integrados",
+      "brand": "Intel Graphics"
+    }
+  },
+  {
+    "id": 23,
+    "name": "ASUS Vivobook Intel Core I5 - 16GB",
+    "description": "ASUS Vivobook X1605....",
+    "price": 3899000,
+    "discount": 42,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/4711387816950-004-750Wx750H.webp",
+    "model": "X1605VA-MB1639W",
+    "ram_capacity": 16,
+    "disk_capacity": 512,
+    "qualification": "0.0",
+    "brand": "ASUS",
+    "processor": {
+      "brand": "Intel",
+      "family": "Intel Core I5",
+      "model": "13420H",
+      "cores": 8,
+      "speed": "Hasta 4,6 GHz con tecnología Intel Turbo Boost,12 MB de caché L3, 8 núcleos y 12 subprocesos."
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11 Home"
+    },
+    "display": {
+      "size": 16,
+      "resolution": "WUXGA",
+      "graphics": "Gráficos integrados",
+      "brand": "Intel Graphics"
+    }
+  },
+  {
+    "id": 15,
+    "name": "HP Intel Core I5 - Windows - 16GB",
+    "description": "Con el portátil 15-fd0024la...",
+    "price": 4999000,
+    "discount": 58,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/198990016412-003-750Wx750H.webp",
+    "model": "15-fd0024la",
+    "ram_capacity": 16,
+    "disk_capacity": 512,
+    "qualification": "0.0",
+    "brand": "HP",
+    "processor": {
+      "brand": "Intel",
+      "family": "Intel Core I5",
+      "model": "1334U",
+      "cores": 10,
+      "speed": "Hasta 4,6 GHz con tecnología Intel Turbo Boost, 12 MB de caché L3, 10 núcleos y 12 subprocesos. "
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11"
+    },
+    "display": {
+      "size": 15,
+      "resolution": "Full HD",
+      "graphics": "Gráficos integrados",
+      "brand": "Intel Graphics"
+    }
+  },
+  {
+    "id": 19,
+    "name": "Acer Nitro Intel Core I5 - 16GB",
+    "description": "ACER te invita a disfrutar....",
+    "price": 5699000,
+    "discount": 36,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/4711474491305-001-750Wx750H.webp",
+    "model": "NL16-71G-56QE",
+    "ram_capacity": 16,
+    "disk_capacity": 512,
+    "qualification": "0.0",
+    "brand": "ACER",
+    "processor": {
+      "brand": "Intel",
+      "family": "Intel Core I5",
+      "model": "13420H",
+      "cores": 8,
+      "speed": "Hasta 4,6 GHz con tecnología Intel Turbo Boost,12 MB de caché L3, 8 núcleos y 12 subprocesos."
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11 Home"
+    },
+    "display": {
+      "size": 16,
+      "resolution": "WUXGA",
+      "graphics": "GeForce RTX 3050",
+      "brand": "NVIDIA"
+    }
+  },
+  {
+    "id": 43,
+    "name": "MacBook APPLE M4 - MacOS",
+    "description": "Descubre el MacBook ...",
+    "price": 5879010,
+    "discount": 0,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/195949890147-001-750Wx750H.webp",
+    "model": "MC6T4E/A",
+    "ram_capacity": 16,
+    "disk_capacity": 256,
+    "qualification": "0.0",
+    "brand": "MACBOOK",
+    "processor": {
+      "brand": "Apple",
+      "family": "APPLE M4",
+      "model": "Apple M4",
+      "cores": 10,
+      "speed": "4.3 GHz"
+    },
+    "system": {
+      "system": "MacOs",
+      "distribution": "MacOs Sequoia"
+    },
+    "display": {
+      "size": 13,
+      "resolution": "Retina",
+      "graphics": "Gráficos integrados",
+      "brand": "Apple"
+    }
+  }
+]
+```
+
+---
 
 #### Obtener un producto por lista de IDs (Publica)
 

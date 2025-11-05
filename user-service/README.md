@@ -17,6 +17,7 @@ Este servicio permite **registrar, autenticar, actualizar y eliminar usuarios**,
 ## Índice
 
 - [Variables de entorno](#variables-de-entorno)
+- [Usuarios de prueba](#usuarios-de-prueba)
 - [Peticiones de la API](#peticiones-de-la-api)
   - [Autenticación](#autenticación)
     - [Registro de usuario - Sign up](#registro-de-usuario---sign-up)
@@ -39,6 +40,15 @@ Este servicio permite **registrar, autenticar, actualizar y eliminar usuarios**,
 | Variable     | Descripción                              | Valor por defecto                                               |
 | ------------ | ---------------------------------------- | --------------------------------------------------------------- |
 | `JWT_SECRET` | Clave secreta para firmar los tokens JWT | `@y*&0a%K%7P0t@uQ^38HN$y4Z^PK#0zE7dem700Bbf&pC6HF$aU^ARkE@u$nn` |
+
+---
+
+## Usuarios de prueba
+
+| Email                   | Contraseña      | Rol           |
+| ----------------------- | --------------- | ------------- |
+| jose.hernandez@test.com | Contrasea34^5G  | Administrador |
+| maria.lopez@test.com    | M4ria!Lopez2024 | Cliente       |
 
 ---
 
@@ -183,13 +193,6 @@ El token se obtiene en `POST /users/sign-in`.
   "token": "jwt..."
 }
 ```
-
-**Usuarios de prueba:**
-
-| Email                   | Contraseña      | Rol           |
-| ----------------------- | --------------- | ------------- |
-| jose.hernandez@test.com | Contrasea34^5G  | Administrador |
-| maria.lopez@test.com    | M4ria!Lopez2024 | Cliente       |
 
 ---
 

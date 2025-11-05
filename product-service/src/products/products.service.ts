@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './product.entity';
-import { Repository, In } from 'typeorm';
+import { Repository, In, Brackets } from 'typeorm';
 import { CreateProductDTO } from './dto/create-product.dto';
 import {
   ResponseProductDTO,
@@ -278,5 +278,45 @@ export class ProductsService {
       where: { id: In(list) },
     });
     return res.map((r) => this.parseProductToDTO(r));
+  }
+  //productos similares
+  async getSimilarProducts(id: number): Promise<ResponseProductDTO[]> {
+    const product = await this.getProductById(id);
+
+    // Genera la consulta base
+    const query = this.productRepository
+      .createQueryBuilder('product')
+      .innerJoinAndSelect('product.brand', 'brand')
+      .innerJoinAndSelect('product.display', 'display')
+      .innerJoinAndSelect('product.processor', 'processor')
+      .innerJoinAndSelect('product.system', 'system')
+      .where('product.id != :id', { id })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('brand.name = :brandId', { brandId: product.brand })
+            .orWhere('processor.model = :processorModel', {
+              processorModel: product.processor.model,
+            })
+            .orWhere('product.ram_capacity = :ram', {
+              ram: product.ram_capacity,
+            });
+        }),
+      )
+      // Calcular prioridad de similitud
+      .addSelect(
+        `
+      (
+        (CASE WHEN brand.id = :brandId THEN 3 ELSE 0 END) +
+        (CASE WHEN processor.model = :processorModel THEN 2 ELSE 0 END) +
+        (CASE WHEN product.ram_capacity = :ram THEN 1 ELSE 0 END)
+      ) AS relevance
+    `,
+      )
+      .orderBy('relevance', 'DESC') // más parecidos primero
+      .addOrderBy('RAND()')
+      .limit(6);
+
+    const similarProducts = await query.getMany();
+    return similarProducts.map((r) => this.parseProductToDTO(r));
   }
 }

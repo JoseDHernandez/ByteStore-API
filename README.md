@@ -148,6 +148,13 @@ Para probar que los servicios están funcionando correctamente, puedes usar herr
 
 **Importante:** La mayoría de los servicios requieren autenticación mediante JWT. Asegúrate de incluir un token válido en el encabezado `Authorization` de tus solicitudes. El token puede obtenerse del servicio de usuarios [(user-service)](https://github.com/JoseDHernandez/ByteStore-API/tree/main/user-service/README.md) al iniciar sesión.
 
+**Usuarios de prueba:**
+
+| Email                   | Contraseña      | Rol           |
+| ----------------------- | --------------- | ------------- |
+| jose.hernandez@test.com | Contrasea34^5G  | Administrador |
+| maria.lopez@test.com    | M4ria!Lopez2024 | Cliente       |
+
 ---
 
 #### Consultar el estado de user-service
