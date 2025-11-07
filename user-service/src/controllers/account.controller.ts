@@ -78,7 +78,7 @@ export const register = async (req: Request, res: Response) => {
       [data.email]
     );
     if (SearchUser[0]?.count && SearchUser[0]?.count !== 0)
-      return res.status(200).json({ message: "Existing account" });
+      return res.status(409).json({ message: "Existing account" });
     //Registrar
     const passwordHashed = await bcrypt.hash(data.password, 13);
     const [registerUser] = await db.query<ResultSetHeader>(
