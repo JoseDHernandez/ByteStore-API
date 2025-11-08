@@ -136,7 +136,26 @@ Las rutas protegidas requieren el header:
 Authorization: <token>
 ```
 
-El token se obtiene en `POST /users/sign-in`.
+El token se obtiene en `POST /users/sign-in` o `POST /users/sign-up`.
+
+### Validar token
+
+Se puede autenticar un usuario enviando el token JWT en el encabezado de autorización y sin datos en el cuerpo.
+
+**POST** `/users/auth`
+
+**Respuesta:**
+
+```json
+{
+  "id": "019a6486-7def-75eb-a420-29810867f66f",
+  "name": "Antonio Rojas Triana",
+  "email": "anto893@example.com",
+  "physical_address": "Casa roja #56",
+  "role": "CLIENTE",
+  "token": "eyJhbGci......"
+}
+```
 
 ### Registro de usuario - Sign up
 
