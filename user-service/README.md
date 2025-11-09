@@ -20,6 +20,7 @@ Este servicio permite **registrar, autenticar, actualizar y eliminar usuarios**,
 - [Usuarios de prueba](#usuarios-de-prueba)
 - [Peticiones de la API](#peticiones-de-la-api)
   - [Autenticación](#autenticación)
+    - [Validar token](#validar-token)
     - [Registro de usuario - Sign up](#registro-de-usuario---sign-up)
     - [Inicio de sesión - Sign in](#inicio-de-sesión---sign-in)
   - [Obtener usuario](#obtener-usuario)
@@ -138,6 +139,8 @@ Authorization: <token>
 
 El token se obtiene en `POST /users/sign-in` o `POST /users/sign-up`.
 
+---
+
 ### Validar token
 
 Se puede autenticar un usuario enviando el token JWT en el encabezado de autorización y sin datos en el cuerpo.
@@ -156,6 +159,8 @@ Se puede autenticar un usuario enviando el token JWT en el encabezado de autoriz
   "token": "eyJhbGci......"
 }
 ```
+
+---
 
 ### Registro de usuario - Sign up
 
