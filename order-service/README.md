@@ -10,7 +10,8 @@
 - [Variables de Entorno](#variables-de-entorno)
 - [🚀 Ejecución](#-ejecución)
 - [📚 Documentación de la API](#-documentación-de-la-api)
-  - [📋 Endpoints de Órdenes](#-endpoints-de-órdenes)
+  - [� Autenticación](#-autenticación)
+  - [�📋 Endpoints de Órdenes](#-endpoints-de-órdenes)
   - [🔄 Endpoints de Estados](#-endpoints-de-estados)
 - [🔐 Estados de Órdenes](#-estados-de-órdenes)
 - [🗄️ Estructura de la Base de Datos](#️-estructura-de-la-base-de-datos)
@@ -56,33 +57,36 @@ Microservicio dedicado a la gestión completa de órdenes para ByteStore. Propor
 ## 🔧 Instalación
 
 ### 1. Clonar el repositorio
+
 ```bash
 git clone <repository-url>
 cd ByteStore-API/orders-service
 ```
 
 ### 2. Instalar dependencias
+
 ```bash
 npm install
 ```
 
 ### 3. Configurar variables de entorno
+
 Crea un archivo `.env` en la raíz del proyecto:
 
 ## Variables de Entorno
 
-| Variable | Descripción | Valor por defecto |
-|----------|-------------|-------------------|
-| `PORT` | Puerto del servidor | `3004` |
-| `NODE_ENV` | Entorno de ejecución | `development` |
-| `DB_HOST` | Host de la base de datos MySQL | `localhost` |
-| `DB_PORT` | Puerto de la base de datos MySQL | `3306` |
-| `DB_USER` | Usuario de la base de datos | `root` |
-| `DB_PASSWORD` | Contraseña de la base de datos | `tu_password` |
-| `DB_NAME` | Nombre de la base de datos | `orders_db` |
-| `JWT_SECRET` | Clave secreta para firmar los tokens JWT | `@y*&0a%K%7P0t@uQ^38HN$y4Z^PK#0zE7dem700Bbf&pC6HF$aU^ARkE@u$nn` |
-| `JWT_EXPIRES_IN` | Duración del token JWT | `30d` |
-| `CORS_ORIGIN` | Orígenes permitidos para CORS | `http://localhost:3000` |
+| Variable         | Descripción                              | Valor por defecto                                               |
+| ---------------- | ---------------------------------------- | --------------------------------------------------------------- |
+| `PORT`           | Puerto del servidor                      | `3004`                                                          |
+| `NODE_ENV`       | Entorno de ejecución                     | `development`                                                   |
+| `DB_HOST`        | Host de la base de datos MySQL           | `localhost`                                                     |
+| `DB_PORT`        | Puerto de la base de datos MySQL         | `3306`                                                          |
+| `DB_USER`        | Usuario de la base de datos              | `root`                                                          |
+| `DB_PASSWORD`    | Contraseña de la base de datos           | `tu_password`                                                   |
+| `DB_NAME`        | Nombre de la base de datos               | `orders_db`                                                     |
+| `JWT_SECRET`     | Clave secreta para firmar los tokens JWT | `@y*&0a%K%7P0t@uQ^38HN$y4Z^PK#0zE7dem700Bbf&pC6HF$aU^ARkE@u$nn` |
+| `JWT_EXPIRES_IN` | Duración del token JWT                   | `30d`                                                           |
+| `CORS_ORIGIN`    | Orígenes permitidos para CORS            | `http://localhost:3000`                                         |
 
 ### Ejemplo de archivo .env
 
@@ -109,11 +113,13 @@ CORS_ORIGIN=http://localhost:3000
 ### 4. Configurar la base de datos
 
 #### Opción A: Usando el script automatizado
+
 ```bash
 npm run db:init
 ```
 
 #### Opción B: Manualmente
+
 ```bash
 # Conectar a MySQL
 mysql -u root -p
@@ -123,6 +129,7 @@ source init/data.sql
 ```
 
 ### 5. Compilar TypeScript
+
 ```bash
 npm run build
 ```
@@ -130,12 +137,15 @@ npm run build
 ## 🚀 Ejecución
 
 ### Desarrollo
+
 ```bash
 npm run dev
 ```
+
 El servidor se ejecutará en `http://localhost:3004` con recarga automática.
 
 ### Producción
+
 ```bash
 npm start
 ```
@@ -143,54 +153,63 @@ npm start
 ## 📚 Documentación de la API
 
 ### Base URL
+
 ```
 http://localhost:3004/api
 ```
 
 ### 🔐 Autenticación
 
-Este servicio utiliza **JSON Web Tokens (JWT)** para la autenticación y autorización.
+Este servicio confía en tokens emitidos por el **user-service**. El flujo es simple:
 
-#### Obtener Token
-Para obtener un token JWT, debes autenticarte a través del servicio de usuarios:
+1. Autentícate en el user-service (`POST /users/sign-in`) y obtén el JWT.
+2. Incluye el token en el header `Authorization: <token>`.
+3. Verifica que el token sigue siendo válido con `GET /auth/validate` de este servicio.
+
+#### Obtener token
+
 ```http
-POST /api/auth/login
+POST /users/sign-in
 Content-Type: application/json
 
 {
-  "email": "usuario@ejemplo.com",
+  "correo": "usuario@ejemplo.com",
   "password": "tu_password"
 }
 ```
 
-#### Usar Token en Requests
-Incluye el token en el header `Authorization` de todas las peticiones:
+#### Validar token
+
 ```http
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+GET /auth/validate
+Authorization: <token>
 ```
 
-#### Roles y Permisos
-- **Usuario**: Puede crear, ver y actualizar sus propias órdenes
-- **Admin**: Acceso completo a todas las órdenes y funciones administrativas
+**Respuesta 200**
 
-#### Ejemplo de Request Autenticado
-```javascript
-fetch('http://localhost:3004/api/orders', {
-  method: 'GET',
-  headers: {
-    'Authorization': 'Bearer ' + token,
-    'Content-Type': 'application/json'
+```json
+{
+  "message": "Token válido",
+  "user": {
+    "id": "01991c0e-16f0-707f-9f6f-3614666caead",
+    "role": "USUARIO"
   }
-})
+}
 ```
+
+#### Roles disponibles
+
+- `USUARIO`: gestiona sus propias órdenes.
+- `ADMINISTRADOR`: acceso completo a las rutas protegidas.
 
 ### 📋 Endpoints de Órdenes
 
 #### Crear Orden
+
 ```http
 POST /api/orders
 Content-Type: application/json
-Authorization: Bearer <token>
+Authorization: <token>
 
 {
   "user_id": "01991c0e-16f0-707f-9f6f-3614666caead",
@@ -211,22 +230,25 @@ Authorization: Bearer <token>
 ```
 
 #### Obtener Órdenes
+
 ```http
 GET /api/orders?page=1&limit=10&estado=pendiente
-Authorization: Bearer <token>
+Authorization: <token>
 ```
 
 #### Obtener Orden por ID
+
 ```http
 GET /api/orders/:id
-Authorization: Bearer <token>
+Authorization: <token>
 ```
 
 #### Actualizar Orden
+
 ```http
 PUT /api/orders/:id
 Content-Type: application/json
-Authorization: Bearer <token>
+Authorization: <token>
 
 {
   "estado": "procesando",
@@ -236,24 +258,27 @@ Authorization: Bearer <token>
 ```
 
 #### Eliminar Orden (Solo Admin)
+
 ```http
 DELETE /api/orders/:id
-Authorization: Bearer <admin_token>
+Authorization: <admin_token>
 ```
 
 #### Estadísticas de Órdenes
+
 ```http
 GET /api/orders/stats
-Authorization: Bearer <token>
+Authorization: <token>
 ```
 
 ### 🔄 Endpoints de Estados
 
 #### Actualizar Estado (Solo Admin)
+
 ```http
 PUT /api/orders/:id/status
 Content-Type: application/json
-Authorization: Bearer <admin_token>
+Authorization: <admin_token>
 
 {
   "estado": "procesando",
@@ -262,16 +287,18 @@ Authorization: Bearer <admin_token>
 ```
 
 #### Historial de Estados
+
 ```http
 GET /api/orders/:id/status/history
-Authorization: Bearer <token>
+Authorization: <token>
 ```
 
 #### Cancelar Orden
+
 ```http
 PUT /api/orders/:id/cancel
 Content-Type: application/json
-Authorization: Bearer <token>
+Authorization: <token>
 
 {
   "motivo": "Cliente solicitó cancelación"
@@ -279,9 +306,10 @@ Authorization: Bearer <token>
 ```
 
 #### Estadísticas de Estados
+
 ```http
 GET /api/orders/status/stats
-Authorization: Bearer <token>
+Authorization: <token>
 ```
 
 ## 🔐 Estados de Órdenes
@@ -295,6 +323,7 @@ pendiente → procesando → enviado → entregado
 ```
 
 ### Estados Disponibles:
+
 - **pendiente**: Orden creada, esperando procesamiento
 - **procesando**: Orden en preparación
 - **enviado**: Orden despachada
@@ -304,16 +333,19 @@ pendiente → procesando → enviado → entregado
 ## 🗄️ Estructura de la Base de Datos
 
 ### Tabla: orders
+
 ```sql
 orden_id (PK) | user_id | correo_usuario | nombre_completo | estado | total | fecha_pago | fecha_entrega
 ```
 
 ### Tabla: order_products
+
 ```sql
 id (PK) | orden_id (FK) | producto_id | cantidad | precio_unitario | subtotal
 ```
 
 ### Tabla: order_status_history
+
 ```sql
 id (PK) | orden_id (FK) | estado_anterior | estado_nuevo | motivo | changed_by | changed_at
 ```
@@ -367,4 +399,3 @@ orders-service/
 3. Commit tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
 4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
 5. Abre un Pull Request
-
