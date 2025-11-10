@@ -142,52 +142,48 @@ http://localhost:3005/api
 
 ### 🔐 Autenticación
 
-Este servicio utiliza **JSON Web Tokens (JWT)** para la autenticación y autorización.
+Flujo sencillo para proteger las rutas de creación y modificación:
 
-#### Obtener Token
+1. Inicia sesión en el user-service (`POST /users/sign-in`) para recibir tu JWT.
+2. Envía el header `Authorization: <token>` en las rutas protegidas.
+3. Comprueba si tu token sigue activo consultando `GET /reviews/auth/validate`.
 
-Para obtener un token JWT, debes autenticarte a través del servicio de usuarios:
+#### Obtener token
 
 ```http
-POST /api/auth/login
+POST /users/sign-in
 Content-Type: application/json
 
 {
-  "email": "usuario@ejemplo.com",
+  "correo": "usuario@ejemplo.com",
   "password": "tu_password"
 }
 ```
 
-#### Usar Token en Requests
-
-Incluye el token en el header `Authorization` de todas las peticiones protegidas:
+#### Validar token
 
 ```http
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+GET /reviews/auth/validate
+Authorization: <token>
 ```
 
-#### Roles y Permisos
+**Respuesta 200**
 
-- **Acceso Público**: Puede ver todas las reviews (GET /reviews, GET /reviews/:id)
-- **Usuario Autenticado**: Puede crear reviews (POST /reviews)
-- **Propietario o Admin**: Puede editar y eliminar sus propias reviews (PUT /reviews/:id, DELETE /reviews/:id)
-
-#### Ejemplo de Request Autenticado
-
-```javascript
-fetch('http://localhost:3005/api/reviews', {
-  method: 'POST',
-  headers: {
-    Authorization: 'Bearer ' + token,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    producto_id: 1,
-    calificacion: 5,
-    comentario: 'Excelente producto',
-  }),
-});
+```json
+{
+  "message": "Token válido",
+  "user": {
+    "id": "01991c0e-16f0-707f-9f6f-3614666caead",
+    "role": "USUARIO"
+  }
+}
 ```
+
+#### Permisos rápidos
+
+- Público: `GET /reviews`, `GET /reviews/:id`
+- Autenticado: `POST /reviews`
+- Propietario/Admin: `PUT /reviews/:id`, `DELETE /reviews/:id`
 
 ### 📝 Endpoints de Reviews
 
@@ -236,7 +232,7 @@ GET /api/reviews?page=1&limit=10&producto_id=1&calificacion=5
 ```http
 POST /api/reviews
 Content-Type: application/json
-Authorization: Bearer <token>
+Authorization: <token>
 
 {
   "producto_id": 1,
@@ -256,7 +252,7 @@ GET /api/reviews/:id
 ```http
 PUT /api/reviews/:id
 Content-Type: application/json
-Authorization: Bearer <token>
+Authorization: <token>
 
 {
   "calificacion": 4,
@@ -268,7 +264,7 @@ Authorization: Bearer <token>
 
 ```http
 DELETE /api/reviews/:id
-Authorization: Bearer <token>
+Authorization: <token>
 ```
 
 ## 🗄️ Estructura de la Base de Datos
