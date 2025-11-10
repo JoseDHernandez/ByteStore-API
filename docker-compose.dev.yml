@@ -52,7 +52,13 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: APBjg7!RKa!P%t^NWd1y
       MYSQL_DATABASE: products
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_spanish2_ci
+      TZ: America/Bogota
+      LANG: C.UTF-8
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8_unicode_ci
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
     volumes:
       - product_data:/var/lib/mysql
       - ./product-service/init:/docker-entrypoint-initdb.d
@@ -94,7 +100,13 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: Dp%mdSM^7MDr3qSQ6Cas
       MYSQL_DATABASE: users
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_spanish2_ci
+      TZ: America/Bogota
+      LANG: C.UTF-8
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8_unicode_ci
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
     volumes:
       - user_data:/var/lib/mysql
       - ./user-service/init:/docker-entrypoint-initdb.d
@@ -147,7 +159,7 @@ services:
     ports:
       - "3004:3004"
     environment:
-      DB_HOST: orders-db
+      DB_HOST: mysql_orders
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: password
@@ -174,9 +186,17 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: orders_db
+      TZ: America/Bogota
+      LANG: C.UTF-8
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8_unicode_ci
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
     volumes:
       - orders_data:/var/lib/mysql
       - ./order-service/init:/docker-entrypoint-initdb.d
+
     networks:
       - app_network
 
@@ -192,7 +212,7 @@ services:
     ports:
       - "3005:3005"
     environment:
-      DB_HOST: reviews-db
+      DB_HOST: mysql_reviews
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: password
@@ -219,6 +239,13 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: reviews_db
+      TZ: America/Bogota
+      LANG: C.UTF-8
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8_unicode_ci
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
     volumes:
       - reviews_data:/var/lib/mysql
       - ./review-service/init:/docker-entrypoint-initdb.d

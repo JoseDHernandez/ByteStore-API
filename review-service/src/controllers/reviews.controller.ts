@@ -51,6 +51,20 @@ export async function createReview(req: Request, res: Response) {
           'Ya has reseñado este producto. Puedes actualizar tu reseña existente.',
       });
     }
+    const data = validatedData;
+    // Consultar usuario existente
+
+    const [existingUser] = await db.query<RowDataPacket[]>(
+      "SELECT id FROM users WHERE id=?",
+      [user_id]
+    );
+    //crear usuario
+    if (existingUser.length === 0) {
+      const [registerUser] = await db.query<ResultSetHeader>(
+        "INSERT INTO users (id, user_name) VALUES (?,?)",
+        [user_id, data.user_name]
+      );
+    }
 
     /** Insert new review into database with current timestamp */
     const [result] = await db.query<ResultSetHeader>(
@@ -66,15 +80,9 @@ export async function createReview(req: Request, res: Response) {
     /** Fetch the newly created review to return complete data */
     const [newReview] = await db.query<ReviewRow[]>(
       `SELECT 
-        c.calificacion_id,
-        c.producto_id,
-        c.usuario_id,
-        'Usuario' as nombre_usuario,
-        c.calificacion,
-        c.comentario,
-        DATE_FORMAT(c.fecha, '%Y-%m-%dT%H:%i:%s.000Z') as fecha
-      FROM calificaciones c
-      WHERE c.calificacion_id = ?`,
+        ${REVIEW_SELECT_FIELDS}
+      FROM reviews as r INNER JOIN users as u ON r.user_id = u.id
+      WHERE r.id = ?`,
       [result.insertId]
     );
 
@@ -109,26 +117,19 @@ export async function getReviews(req: Request, res: Response) {
     const {
       page,
       limit,
-      producto_id,
-      usuario_id,
+      product_id,
+      user_id,
       sort,
       order,
-      calificacion_min,
-      calificacion_max,
+      qualification_min,
+      qualification_max,
     } = validatedQuery;
 
     /** Build dynamic SQL query with filters */
     let baseQuery = `
       SELECT 
-        c.calificacion_id,
-        c.producto_id,
-        c.usuario_id,
-        'Usuario' as nombre_usuario,
-        c.calificacion,
-        c.comentario,
-        DATE_FORMAT(c.fecha, '%Y-%m-%dT%H:%i:%s.000Z') as fecha
-      FROM calificaciones c
-      WHERE 1=1
+        ${REVIEW_SELECT_FIELDS}
+      FROM reviews as r INNER JOIN users as u ON r.user_id = u.id 
     `;
 
     /** Count query for total results (same filters as main query) */
@@ -200,7 +201,6 @@ export async function getReviews(req: Request, res: Response) {
       prev,
       data: reviews,
     };
-
     res.status(200).json(response);
   } catch (error: any) {
     if (error.name === 'ZodError') {
@@ -227,15 +227,9 @@ export async function getReviewById(req: Request, res: Response) {
     /** Query review by primary key */
     const [review] = await db.query<ReviewRow[]>(
       `SELECT 
-        c.calificacion_id,
-        c.producto_id,
-        c.usuario_id,
-        'Usuario' as nombre_usuario,
-        c.calificacion,
-        c.comentario,
-        DATE_FORMAT(c.fecha, '%Y-%m-%dT%H:%i:%s.000Z') as fecha
-      FROM calificaciones c
-      WHERE c.calificacion_id = ?`,
+        ${REVIEW_SELECT_FIELDS}
+      FROM reviews as r INNER JOIN users as u ON r.user_id = u.id
+      WHERE r.id = ?`,
       [id]
     );
 
@@ -243,7 +237,7 @@ export async function getReviewById(req: Request, res: Response) {
       return res.status(404).json({ message: 'Reseña no encontrada' });
     }
 
-    res.status(200).json({ data: review[0] });
+    res.status(200).json(review[0]);
   } catch (error: any) {
     if (error.name === 'ZodError') {
       return res.status(400).json({
@@ -325,15 +319,9 @@ export async function updateReview(req: Request, res: Response) {
     /** Fetch updated review to return complete data */
     const [updatedReview] = await db.query<ReviewRow[]>(
       `SELECT 
-        c.calificacion_id,
-        c.producto_id,
-        c.usuario_id,
-        'Usuario' as nombre_usuario,
-        c.calificacion,
-        c.comentario,
-        DATE_FORMAT(c.fecha, '%Y-%m-%dT%H:%i:%s.000Z') as fecha
-      FROM calificaciones c
-      WHERE c.calificacion_id = ?`,
+        ${REVIEW_SELECT_FIELDS}
+      FROM reviews as r INNER JOIN users as u ON r.user_id = u.id
+      WHERE r.id = ?`,
       [id]
     );
 
@@ -421,15 +409,9 @@ export async function getReviewsByProduct(req: Request, res: Response) {
     /** Query for product-specific reviews */
     let baseQuery = `
       SELECT 
-        c.calificacion_id,
-        c.producto_id,
-        c.usuario_id,
-        'Usuario' as nombre_usuario,
-        c.calificacion,
-        c.comentario,
-        DATE_FORMAT(c.fecha, '%Y-%m-%dT%H:%i:%s.000Z') as fecha
-      FROM calificaciones c
-      WHERE c.producto_id = ?
+        ${REVIEW_SELECT_FIELDS}
+      FROM reviews as r INNER JOIN users as u ON r.user_id = u.id
+      WHERE r.product_id = ? 
     `;
 
     /** Apply sorting (date or rating) */
@@ -460,7 +442,7 @@ export async function getReviewsByProduct(req: Request, res: Response) {
 
     /** Execute query with product ID and pagination params */
     const [reviews] = await db.query<ReviewRow[]>(baseQuery, [
-      producto_id,
+      product_id,
       limit,
       offset,
     ]);

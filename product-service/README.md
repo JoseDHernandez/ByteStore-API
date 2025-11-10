@@ -6,7 +6,7 @@ La mayoría de las operaciones de este servicio requieren autenticación mediant
 
 ## Tecnologías utilizadas
 
-- nestjs + TypeScript
+- Nestjs + TypeScript
 - TypeORM
 - MySQL
 - jwt (jsonwebtoken)
@@ -21,6 +21,8 @@ La mayoría de las operaciones de este servicio requieren autenticación mediant
   - [Productos](#productos)
     - [Solicitar productos (Publica)](#solicitar-productos-pública)
     - [Obtener un producto por ID (Publica)](#obtener-un-producto-por-id-pública)
+    - [Obtener productos similares por ID (Publica)](#obtener-productos-similares-por-id-pública)
+    - [Obtener un producto por lista de IDs (Publica)](#obtener-un-producto-por-lista-de-ids-pública)
     - [Obtener filtros disponibles (Publica)](#obtener-filtros-disponibles-pública)
     - [Crear un producto](#crear-un-producto)
     - [Editar un producto](#editar-un-producto)
@@ -87,7 +89,7 @@ En las peticiones que devuelven productos, se utiliza el siguiente esquema:
 
 **Esquema de producto:**
 
-```json
+```js
 {
   "id": 1,
   "name": "HP Intel Core I3 - 8GB", // Marca + Familia del procesador + RAM
@@ -138,10 +140,12 @@ Al solicitar la lista de productos, se pueden usar los siguientes parámetros pa
 | `page` | number | 1 | Número de página (debe ser positivo) |
 | `limit` | number | 15 | Cantidad de productos en la respuesta (máximo 100) |
 | `search` | string | | Término de búsqueda (nombre, modelo, marca del producto, marca de los gráficos o marca del procesador) |
+| `sort`| string | | Tipo de orden `order_price` o `order_review` |
+| `order` | string | `ASC` | Orden ascendente (`ASC`) o descendente (`DESC`) |
 
 **Respuesta:**
 
-```json
+```js
 {
   "total": 45,
     "pages": 3,
@@ -162,7 +166,7 @@ Obtiene un producto por su ID (numérico).
 
 **Respuesta:** `/2`
 
-```json
+```js
 {
   "id": 2,
   "name": "Lenovo AMD R5 - 24GB",
@@ -198,6 +202,320 @@ Obtiene un producto por su ID (numérico).
 
 ---
 
+#### Obtener productos similares por ID (Publica)
+
+Para obtener productos similares, se consideran aquellos que comparten la misma marca, la misma marca de procesador o cantidad de memoria ram. Se excluye el producto original de la lista de resultados y se retornan 6 productos similares (con influencia de aleatoriedad).
+
+**GET** `/:id/similar`
+
+**Respuesta:**
+
+```json
+[
+  {
+    "id": 39,
+    "name": "Lenovo Yoga Slim 7 Intel Core I5 - 16GB",
+    "description": "Aprovecha la máxima libertad ...",
+    "price": 5199000,
+    "discount": 25,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/197531167644-001-750Wx750H.webp",
+    "model": "83CV000KLM",
+    "ram_capacity": 16,
+    "disk_capacity": 1000,
+    "qualification": "0.0",
+    "brand": "LENOVO",
+    "processor": {
+      "brand": "Intel",
+      "family": "Intel Core I5",
+      "model": "125H",
+      "cores": 14,
+      "speed": "Hasta 4.5 GHz con Intel Turbo Boost Technology, 18 MB L3 caché, 14 núcleos, 18 hilos"
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11 Home"
+    },
+    "display": {
+      "size": 14,
+      "resolution": "OLED",
+      "graphics": "Gráficos integrados",
+      "brand": "Intel Graphics"
+    }
+  },
+  {
+    "id": 8,
+    "name": "HP Intel Core I5 - 8GB",
+    "description": "Con el Portátil HP 14-Ep1001la...",
+    "price": 3999000,
+    "discount": 45,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/198415103550-001-750Wx750H.webp",
+    "model": "14-Ep1001la",
+    "ram_capacity": 8,
+    "disk_capacity": 512,
+    "qualification": "0.0",
+    "brand": "HP",
+    "processor": {
+      "brand": "Intel",
+      "family": "Intel Core I5",
+      "model": "125H",
+      "cores": 14,
+      "speed": "Hasta 4.5 GHz con Intel Turbo Boost Technology, 18 MB L3 caché, 14 núcleos, 18 hilos"
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11"
+    },
+    "display": {
+      "size": 14,
+      "resolution": "Full HD",
+      "graphics": "Gráficos integrados",
+      "brand": "Intel Graphics"
+    }
+  },
+  {
+    "id": 23,
+    "name": "ASUS Vivobook Intel Core I5 - 16GB",
+    "description": "ASUS Vivobook X1605....",
+    "price": 3899000,
+    "discount": 42,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/4711387816950-004-750Wx750H.webp",
+    "model": "X1605VA-MB1639W",
+    "ram_capacity": 16,
+    "disk_capacity": 512,
+    "qualification": "0.0",
+    "brand": "ASUS",
+    "processor": {
+      "brand": "Intel",
+      "family": "Intel Core I5",
+      "model": "13420H",
+      "cores": 8,
+      "speed": "Hasta 4,6 GHz con tecnología Intel Turbo Boost,12 MB de caché L3, 8 núcleos y 12 subprocesos."
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11 Home"
+    },
+    "display": {
+      "size": 16,
+      "resolution": "WUXGA",
+      "graphics": "Gráficos integrados",
+      "brand": "Intel Graphics"
+    }
+  },
+  {
+    "id": 15,
+    "name": "HP Intel Core I5 - Windows - 16GB",
+    "description": "Con el portátil 15-fd0024la...",
+    "price": 4999000,
+    "discount": 58,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/198990016412-003-750Wx750H.webp",
+    "model": "15-fd0024la",
+    "ram_capacity": 16,
+    "disk_capacity": 512,
+    "qualification": "0.0",
+    "brand": "HP",
+    "processor": {
+      "brand": "Intel",
+      "family": "Intel Core I5",
+      "model": "1334U",
+      "cores": 10,
+      "speed": "Hasta 4,6 GHz con tecnología Intel Turbo Boost, 12 MB de caché L3, 10 núcleos y 12 subprocesos. "
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11"
+    },
+    "display": {
+      "size": 15,
+      "resolution": "Full HD",
+      "graphics": "Gráficos integrados",
+      "brand": "Intel Graphics"
+    }
+  },
+  {
+    "id": 19,
+    "name": "Acer Nitro Intel Core I5 - 16GB",
+    "description": "ACER te invita a disfrutar....",
+    "price": 5699000,
+    "discount": 36,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/4711474491305-001-750Wx750H.webp",
+    "model": "NL16-71G-56QE",
+    "ram_capacity": 16,
+    "disk_capacity": 512,
+    "qualification": "0.0",
+    "brand": "ACER",
+    "processor": {
+      "brand": "Intel",
+      "family": "Intel Core I5",
+      "model": "13420H",
+      "cores": 8,
+      "speed": "Hasta 4,6 GHz con tecnología Intel Turbo Boost,12 MB de caché L3, 8 núcleos y 12 subprocesos."
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11 Home"
+    },
+    "display": {
+      "size": 16,
+      "resolution": "WUXGA",
+      "graphics": "GeForce RTX 3050",
+      "brand": "NVIDIA"
+    }
+  },
+  {
+    "id": 43,
+    "name": "MacBook APPLE M4 - MacOS",
+    "description": "Descubre el MacBook ...",
+    "price": 5879010,
+    "discount": 0,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/195949890147-001-750Wx750H.webp",
+    "model": "MC6T4E/A",
+    "ram_capacity": 16,
+    "disk_capacity": 256,
+    "qualification": "0.0",
+    "brand": "MACBOOK",
+    "processor": {
+      "brand": "Apple",
+      "family": "APPLE M4",
+      "model": "Apple M4",
+      "cores": 10,
+      "speed": "4.3 GHz"
+    },
+    "system": {
+      "system": "MacOs",
+      "distribution": "MacOs Sequoia"
+    },
+    "display": {
+      "size": 13,
+      "resolution": "Retina",
+      "graphics": "Gráficos integrados",
+      "brand": "Apple"
+    }
+  }
+]
+```
+
+---
+
+#### Obtener un producto por lista de IDs (Publica)
+
+Obtiene una lista de productos por sus IDs (numéricos), separados por comas.
+
+**Parámetros:**
+| Parámetro |Tipo | Valor por defecto | Descripción |
+| --------- | ----------------------------------- | ------- | ----------------- |
+| `list` | string | | lista de los ids de los productos (separados por comas). Ejemplo: `1,2,3` |
+
+**GET** `/?list=1,2,3`
+
+**Respuesta:**
+
+```json
+[
+  {
+    "id": 1,
+    "name": "HP Intel Core I3 - 8GB",
+    "description": "Con el PortÃ¡til ...",
+    "price": 3299000,
+    "discount": 54,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/198122843657-001-750Wx750H.webp",
+    "model": "15-fd0026la",
+    "ram_capacity": 8,
+    "disk_capacity": 512,
+    "qualification": "0.0",
+    "brand": "HP",
+    "processor": {
+      "brand": "Intel",
+      "family": "Intel Core I3",
+      "model": "N305",
+      "cores": 8,
+      "speed": "Hasta 3,8 GHz con tecnologÃ­a Intel Turbo Boost, 6 MB de cachÃ© L3, 8 nÃºcleos y 8 subprocesos."
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11 Home"
+    },
+    "display": {
+      "size": 15,
+      "resolution": "Full HD",
+      "graphics": "GrÃ¡ficos integrados",
+      "brand": "Intel Graphics"
+    }
+  },
+  {
+    "id": 2,
+    "name": "Lenovo AMD R5 - 24GB",
+    "description": "Potencia y elegancia...",
+    "price": 3999000,
+    "discount": 40,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/198155958762-001-750Wx750H.webp",
+    "model": "83KA001NLM",
+    "ram_capacity": 24,
+    "disk_capacity": 512,
+    "qualification": "0.0",
+    "brand": "LENOVO",
+    "processor": {
+      "brand": "AMD",
+      "family": "Ryzen 5",
+      "model": "8640HS",
+      "cores": 6,
+      "speed": "(12T, 3.5 / 4.9GHz, 6MB L2 / 16MB L3)"
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11 Home"
+    },
+    "display": {
+      "size": 15,
+      "resolution": "WUXGA",
+      "graphics": "GrÃ¡ficos integrados",
+      "brand": "AMD Radeon"
+    }
+  },
+  {
+    "id": 3,
+    "name": "HP Intel Core I5 - 16GB",
+    "description": "Con el PortÃ¡til HP 15-fd1255la,...",
+    "price": 4999000,
+    "discount": 50,
+    "stock": 10,
+    "image": "http://localhost:3000/products/images/199251256417-003-750Wx750H.webp",
+    "model": "15-fd1255la",
+    "ram_capacity": 16,
+    "disk_capacity": 512,
+    "qualification": "0.0",
+    "brand": "HP",
+    "processor": {
+      "brand": "Intel",
+      "family": "Intel Core I5",
+      "model": "125H",
+      "cores": 14,
+      "speed": "Hasta 4.5 GHz con Intel Turbo Boost Technology, 18 MB L3 cachÃ©, 14 nÃºcleos, 18 hilos"
+    },
+    "system": {
+      "system": "Windows",
+      "distribution": "Windows 11 Home"
+    },
+    "display": {
+      "size": 15,
+      "resolution": "Full HD",
+      "graphics": "GrÃ¡ficos integrados",
+      "brand": "Intel Graphics"
+    }
+  }
+]
+```
+
+---
+
 #### Obtener filtros disponibles (Publica)
 
 esta ruta devuelve las opciones disponibles para los filtros en la búsqueda de productos, util para interfaces de usuario.
@@ -206,7 +524,7 @@ esta ruta devuelve las opciones disponibles para los filtros en la búsqueda de 
 
 **Respuesta:**
 
-```json
+```js
 {
   //Marcas de los productos
   "brands": [
@@ -268,7 +586,7 @@ Esta ruta permite crear un nuevo producto en el sistema.
 
 **Body:**
 
-```json
+```js
 {
   // Todos los campos son obligatorios
 
@@ -329,7 +647,7 @@ Esta ruta permite crear un nuevo producto en el sistema.
 
 **Respuesta:**
 
-```json
+```js
 {
   "id": 7, // ID automático
   "name": "LENOVO IdeaPad Intel Core I5 - 16GB",
@@ -373,7 +691,7 @@ Esta ruta permite editar un producto existente en el sistema.
 
 **Body:**
 
-```json
+```js
 {
   // Todos los campos son opcionales, pero al menos uno debe ser enviado
   "name": "HP Intel Core I5 - 8GB",
@@ -396,7 +714,7 @@ Esta ruta permite editar un producto existente en el sistema.
 
 **Respuesta:**
 
-```json
+```js
 {
   "id": 8,
   "name": "HP Intel Core I5 - 8GB",
@@ -440,7 +758,7 @@ Esta ruta permite actualizar la calificación general de un producto, esta se ca
 
 **Body:**
 
-```json
+```js
 {
   // Calificación entre 0.0 y 5.0
   "qualification": 4.5
@@ -449,7 +767,7 @@ Esta ruta permite actualizar la calificación general de un producto, esta se ca
 
 **Respuesta:**
 
-```json
+```js
 {
   "id": 8,
   "name": "HP Intel Core I5 - 8GB",
@@ -493,7 +811,7 @@ Esta ruta permite eliminar un producto existente en el sistema.
 
 **Respuesta:**
 
-```json
+```js
 {
   "message": "Se elimino correctamente el registro del producto con id: 8"
 }
@@ -534,7 +852,7 @@ Esta ruta permite subir una imagen al servidor.
 
 **Respuesta:**
 
-```json
+```js
 {
   "message": "Imagen subida correctamente",
   // La URL para acceder a la imagen
@@ -560,7 +878,7 @@ _Nota:_ `:filename` es el nombre del archivo a reemplazar (incluida la extensió
 
 **Respuesta:**
 
-```json
+```js
 {
   "message": "Imagen reemplazada correctamente",
   "filepath": "{API_URL}/images/198158432276-001-750Wx750H.webp"
@@ -577,7 +895,7 @@ Esta ruta permite eliminar una imagen existente en el servidor. Esto no elimina 
 
 **Respuesta:**
 
-```json
+```js
 {
   "message": "La imagen 198158432276-001-750Wx750H.webp fue eliminada."
 }
@@ -597,33 +915,33 @@ Esta ruta devuelve la lista de marcas disponibles en el sistema.
 
 **Respuesta:**
 
-```json
+```js
 [
   {
-    "id": 1,
-    "name": "Acer"
+    id: 1,
+    name: 'Acer',
   },
   {
-    "id": 2,
-    "name": "Asus"
+    id: 2,
+    name: 'Asus',
   },
   {
-    "id": 3,
-    "name": "Hp"
+    id: 3,
+    name: 'Hp',
   },
   {
-    "id": 4,
-    "name": "Lenovo"
+    id: 4,
+    name: 'Lenovo',
   },
   {
-    "id": 5,
-    "name": "Msi"
+    id: 5,
+    name: 'Msi',
   },
   {
-    "id": 6,
-    "name": "Rog"
-  }
-]
+    id: 6,
+    name: 'Rog',
+  },
+];
 ```
 
 ---
@@ -636,7 +954,7 @@ Esta ruta devuelve una marca específica por su ID.
 
 **Respuesta:**
 
-```json
+```js
 {
   "id": 1,
   "name": "HP"
@@ -653,7 +971,7 @@ Esta ruta permite crear una nueva marca en el sistema.
 
 **Body:**
 
-```json
+```js
 {
   // Nombre de la marca (string único, obligatorio)
   // En caso de que ya exista, no se crea y se retornan los datos existentes
@@ -663,7 +981,7 @@ Esta ruta permite crear una nueva marca en el sistema.
 
 **Respuesta:**
 
-```json
+```js
 {
   "id": 7,
   "name": "Nueva Marca"
@@ -680,7 +998,7 @@ Esta ruta permite actualizar una marca existente en el sistema.
 
 **Body:**
 
-```json
+```js
 {
   "name": "Marca Actualizada"
 }
@@ -688,7 +1006,7 @@ Esta ruta permite actualizar una marca existente en el sistema.
 
 **Respuesta:**
 
-```json
+```js
 {
   "id": 7,
   "name": "Marca Actualizada"
@@ -705,7 +1023,7 @@ Esta ruta permite eliminar una marca existente en el sistema. Esto no elimina lo
 
 **Respuesta:**
 
-```json
+```js
 {
   "message": "Se elimino correctamente el registro de la marca con id: 7"
 }
@@ -725,37 +1043,37 @@ Esta ruta devuelve la lista de gráficos disponibles en el sistema.
 
 **Respuesta:**
 
-```json
+```js
 [
   {
-    "id": 1,
-    "brand": "Intel Graphics",
-    "size": 15,
-    "resolution": "Full HD",
-    "graphics": "Gráficos integrados"
+    id: 1,
+    brand: 'Intel Graphics',
+    size: 15,
+    resolution: 'Full HD',
+    graphics: 'Gráficos integrados',
   },
   {
-    "id": 2,
-    "brand": "Amd Radeon",
-    "size": 15,
-    "resolution": "WUXGA",
-    "graphics": "Gráficos integrados"
+    id: 2,
+    brand: 'Amd Radeon',
+    size: 15,
+    resolution: 'WUXGA',
+    graphics: 'Gráficos integrados',
   },
   {
-    "id": 3,
-    "brand": "Nvidia",
-    "size": 15,
-    "resolution": "Full HD",
-    "graphics": "Nvidia GeForce RTX 3050"
+    id: 3,
+    brand: 'Nvidia',
+    size: 15,
+    resolution: 'Full HD',
+    graphics: 'Nvidia GeForce RTX 3050',
   },
   {
-    "id": 4,
-    "brand": "Apple",
-    "size": 13,
-    "resolution": "2560 x 1600",
-    "graphics": "Apple M1"
-  }
-]
+    id: 4,
+    brand: 'Apple',
+    size: 13,
+    resolution: '2560 x 1600',
+    graphics: 'Apple M1',
+  },
+];
 ```
 
 ---
@@ -768,7 +1086,7 @@ Esta ruta devuelve un gráfico específico por su ID.
 
 **Respuesta:**
 
-```json
+```js
 {
   "id": 1,
   "brand": "Intel Graphics",
@@ -788,7 +1106,7 @@ Esta ruta permite crear un nuevo gráfico en el sistema.
 
 **Body:**
 
-```json
+```js
 {
   // Todos los campos son obligatorios
   // En caso de que ya exista, no se crea y se retornan los datos existentes
@@ -809,7 +1127,7 @@ Esta ruta permite crear un nuevo gráfico en el sistema.
 
 **Respuesta:**
 
-```json
+```js
 {
   "id": 5,
   "brand": "Intel Graphics",
@@ -829,7 +1147,7 @@ Esta ruta permite actualizar un gráfico existente en el sistema.
 
 **Body:**
 
-```json
+```js
 {
   // Todos los campos son opcionales, pero al menos uno debe ser enviado
   "brand": "Intel Graphics",
@@ -841,7 +1159,7 @@ Esta ruta permite actualizar un gráfico existente en el sistema.
 
 **Respuesta:**
 
-```json
+```js
 {
   "id": 5,
   "brand": "Intel Graphics",
@@ -861,7 +1179,7 @@ Esta ruta permite eliminar un gráfico existente en el sistema. Esto elimina los
 
 **Respuesta:**
 
-```json
+```js
 {
   "message": "Se elimino correctamente el registro de la pantalla con id: 5"
 }
@@ -881,25 +1199,25 @@ Esta ruta devuelve la lista de procesadores disponibles en el sistema.
 
 **Respuesta:**
 
-```json
+```js
 [
   {
-    "id": 1,
-    "brand": "Intel",
-    "family": "Intel Core I3",
-    "model": "N305",
-    "cores": 8,
-    "speed": "Hasta 3,8 GHz con tecnología Intel Turbo Boost"
+    id: 1,
+    brand: 'Intel',
+    family: 'Intel Core I3',
+    model: 'N305',
+    cores: 8,
+    speed: 'Hasta 3,8 GHz con tecnología Intel Turbo Boost',
   },
   {
-    "id": 2,
-    "brand": "Amd",
-    "family": "Ryzen 5",
-    "model": "8640HS",
-    "cores": 6,
-    "speed": "12T, 3.5 / 4.9GHz, 6MB L2 / 16MB L3"
-  }
-]
+    id: 2,
+    brand: 'Amd',
+    family: 'Ryzen 5',
+    model: '8640HS',
+    cores: 6,
+    speed: '12T, 3.5 / 4.9GHz, 6MB L2 / 16MB L3',
+  },
+];
 ```
 
 ---
@@ -912,7 +1230,7 @@ Esta ruta devuelve un procesador específico por su ID.
 
 **Respuesta:**
 
-```json
+```js
 {
   "id": 1,
   "brand": "Intel",
@@ -933,7 +1251,7 @@ Esta ruta permite crear un nuevo procesador en el sistema.
 
 **Body:**
 
-```json
+```js
 {
   // Todos los campos son obligatorios
   // En caso de que ya exista, no se crea y se retornan los datos existentes
@@ -957,7 +1275,7 @@ Esta ruta permite crear un nuevo procesador en el sistema.
 
 **Respuesta:**
 
-```json
+```js
 {
   "id": 3,
   "brand": "Intel",
@@ -978,7 +1296,7 @@ Esta ruta permite actualizar un procesador existente en el sistema.
 
 **Body:**
 
-```json
+```js
 {
   // Todos los campos son opcionales, pero al menos uno debe ser enviado
   "brand": "Intel",
@@ -991,7 +1309,7 @@ Esta ruta permite actualizar un procesador existente en el sistema.
 
 **Respuesta:**
 
-```json
+```js
 {
   "id": 3,
   "brand": "Intel",
@@ -1012,7 +1330,7 @@ Esta ruta permite eliminar un procesador existente en el sistema. Esto elimina l
 
 **Respuesta:**
 
-```json
+```js
 {
   "message": "Se elimino correctamente el registro del procesador con id: 3"
 }
@@ -1032,24 +1350,24 @@ Esta ruta devuelve la lista de sistemas operativos disponibles en el sistema.
 
 **Respuesta:**
 
-```json
+```js
 [
   {
-    "id": 1,
-    "system": "Windows",
-    "distribution": "Windows 11 Home LTS"
+    id: 1,
+    system: 'Windows',
+    distribution: 'Windows 11 Home LTS',
   },
   {
-    "id": 2,
-    "system": "Windows",
-    "distribution": "Windows 11 Pro"
+    id: 2,
+    system: 'Windows',
+    distribution: 'Windows 11 Pro',
   },
   {
-    "id": 3,
-    "system": "MacOS",
-    "distribution": "MacOS Ventura"
-  }
-]
+    id: 3,
+    system: 'MacOS',
+    distribution: 'MacOS Ventura',
+  },
+];
 ```
 
 ---
@@ -1062,7 +1380,7 @@ Esta ruta devuelve un sistema operativo específico por su ID.
 
 **Respuesta:**
 
-```json
+```js
 {
   "id": 1,
   "system": "Windows",
@@ -1080,7 +1398,7 @@ Esta ruta permite crear un nuevo sistema operativo en el sistema.
 
 **Body:**
 
-```json
+```js
 {
   // Todos los campos son obligatorios
   // En caso de que ya exista, no se crea y se retornan los datos existentes
@@ -1095,7 +1413,7 @@ Esta ruta permite crear un nuevo sistema operativo en el sistema.
 
 **Respuesta:**
 
-```json
+```js
 {
   "id": 4,
   "system": "Windows",
@@ -1113,7 +1431,7 @@ Esta ruta permite actualizar un sistema operativo existente en el sistema.
 
 **Body:**
 
-```json
+```js
 {
   // Todos los campos son opcionales, pero al menos uno debe ser enviado
   "system": "Windows",
@@ -1123,7 +1441,7 @@ Esta ruta permite actualizar un sistema operativo existente en el sistema.
 
 **Respuesta:**
 
-```json
+```js
 {
   "id": 4,
   "system": "Windows",
@@ -1141,7 +1459,7 @@ Esta ruta permite eliminar un sistema operativo existente en el sistema. Esto el
 
 **Respuesta:**
 
-```json
+```js
 {
   "message": "Se elimino correctamente el registro del sistema operativo con id: 4"
 }

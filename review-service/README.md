@@ -1,146 +1,82 @@
 # 📝 Reviews Service - ByteStore API
 
-## 📑 Índice
+Este servicio maneja las operaciones relacionadas con las reseñas de productos en la plataforma ByteStore. Permite a los usuarios crear, leer, actualizar y eliminar reseñas, así como gestionar las respuestas a estas reseñas.
 
-- [🚀 Descripción](#-descripción)
-- [✨ Características Principales](#-características-principales)
-- [🛠️ Tecnologías Utilizadas](#️-tecnologías-utilizadas)
-- [📋 Prerrequisitos](#-prerrequisitos)
-- [🔧 Instalación](#-instalación)
-- [Variables de Entorno](#variables-de-entorno)
-- [🚀 Ejecución](#-ejecución)
-- [📚 Documentación de la API](#-documentación-de-la-api)
-  - [🔐 Autenticación](#-autenticación)
-  - [📝 Endpoints de Reviews](#-endpoints-de-reviews)
-- [🗄️ Estructura de la Base de Datos](#️-estructura-de-la-base-de-datos)
-- [🚨 Códigos de Estado HTTP](#-códigos-de-estado-http)
-- [📁 Estructura del Proyecto](#-estructura-del-proyecto)
-- [🐳 Docker](#-docker)
-- [📝 Notas Importantes](#-notas-importantes)
-- [🤝 Contribución](#-contribución)
-- [📄 Licencia](#-licencia)
+Para los tokens de autenticación, se utiliza JWT (JSON Web Tokens). Asegúrate de incluir el token en el encabezado `Authorization` de tus solicitudes para los endpoints que requieren autenticación. Este token debe ser obtenido a través del [servicio de usuarios](https://github.com/JoseDHernandez/ByteStore-API/tree/main/user-service).
 
-## 🚀 Descripción
+## API Endpoints
 
-Microservicio especializado en la gestión de reseñas y calificaciones para la plataforma ByteStore. Proporciona un sistema completo de reviews con autenticación, validaciones robustas y control de permisos granular.
+Los parámetros de consulta disponibles para los endpoints GET son:
 
-## ✨ Características Principales
+| Parámetro           | Descripción                              | Tipo    | Valores posibles               | Por defecto   |
+| ------------------- | ---------------------------------------- | ------- | ------------------------------ | ------------- |
+| `page`              | Página de resultados a mostrar           | Integer | Cualquier número entero        | 1             |
+| `limit`             | Número de resultados por página          | Integer | Cualquier número entero        | 10            |
+| `sort`              | Campo por el cual ordenar los resultados | String  | `review_date`, `qualification` | `review_date` |
+| `order`             | Orden de los resultados                  | String  | `ASC`, `DESC`                  | `DESC`        |
+| `product_id`        | Filtrar reseñas por ID de producto       | Integer | Cualquier número entero        | Ninguno       |
+| `min_qualification` | Filtrar reseñas por calificación mínima  | Float   | Cualquier número decimal       | Ninguno       |
+| `max_qualification` | Filtrar reseñas por calificación máxima  | Float   | Cualquier número decimal       | Ninguno       |
+| `user_id`           | Filtrar reseñas por ID de usuario        | String  | Cualquier cadena               | Ninguno       |
 
-- **Sistema de Calificaciones**: Reviews con puntuación de 1 a 5 estrellas
-- **Autenticación JWT**: Seguridad basada en tokens con validación de roles
-- **CRUD Completo**: Operaciones completas para reviews/calificaciones
-- **Paginación Avanzada**: Sistema de paginación con estructura estándar
-- **Filtros y Ordenamiento**: Búsqueda por producto, usuario, calificación y fechas
-- **Validaciones Robustas**: Esquemas Zod para validación de datos
-- **Control de Permisos**: Sistema de autorización propietario/admin
-- **Base de Datos MySQL**: Persistencia confiable con transacciones
-- **Formato ISO**: Manejo estándar de fechas
+### Obtener todas las reseñas
 
-## 🛠️ Tecnologías Utilizadas
+Para obtener todas las reseñas de productos.
 
-- **Node.js** (v18+) - Runtime de JavaScript
-- **TypeScript** - Tipado estático
-- **Express.js** - Framework web
-- **MySQL2** - Driver de base de datos
-- **JWT** - Autenticación y autorización
-- **Zod** - Validación de esquemas
-- **Morgan** - Logging de requests
-- **CORS** - Manejo de políticas de origen cruzado
+**GET** `/`
 
-## 📋 Prerrequisitos
+**Respuesta**
 
-- Node.js >= 18.0.0
-- npm >= 8.0.0
-- MySQL >= 8.0
-- Git
-
-## 🔧 Instalación
-
-### 1. Clonar el repositorio
-
-```bash
-git clone <repository-url>
-cd ByteStore-API/review-service
+```json
+{
+  "total": 2,
+  "pages": 1,
+  "first": 1,
+  "next": null,
+  "prev": null,
+  "data": [
+    {
+      "id": 1,
+      "product_id": 1,
+      "qualification": "4.5",
+      "comment": "Excelente producto, muy satisfecho con la compra.",
+      "review_date": "2025-10-02T23:49:37.000Z",
+      "user_name": "José Hernández"
+    },
+    {
+      "id": 2,
+      "product_id": 1,
+      "qualification": "3.0",
+      "comment": "El producto es bueno pero el envío fue lento.",
+      "review_date": "2025-10-02T23:49:37.000Z",
+      "user_name": "José Hernández"
+    }
+  ]
+}
 ```
 
-### 2. Instalar dependencias
+---
 
-```bash
-npm install
+### Obtener reseñas por ID
+
+Para obtener una reseña específica por su ID.
+
+**GET** `/:id`
+
+**Respuesta**
+
+```json
+{
+  "id": 1,
+  "product_id": 1,
+  "qualification": "4.5",
+  "comment": "Excelente producto, muy satisfecho con la compra.",
+  "review_date": "2025-10-02T23:49:37.000Z",
+  "user_name": "José Hernández"
+}
 ```
 
-### 3. Configurar variables de entorno
-
-```bash
-cp .env.example .env
-```
-
-Editar `.env` con tus configuraciones.
-
-### 4. Configurar la base de datos
-
-- Crear la base de datos MySQL
-- Ejecutar el script `init/data.sql` para crear las tablas y datos de prueba
-
-## Variables de Entorno
-
-| Variable         | Descripción                              | Valor por defecto                                               |
-| ---------------- | ---------------------------------------- | --------------------------------------------------------------- |
-| `PORT`           | Puerto del servidor                      | `3005`                                                          |
-| `NODE_ENV`       | Entorno de ejecución                     | `development`                                                   |
-| `DB_HOST`        | Host de la base de datos MySQL           | `localhost`                                                     |
-| `DB_PORT`        | Puerto de la base de datos MySQL         | `3306`                                                          |
-| `DB_USER`        | Usuario de la base de datos              | `root`                                                          |
-| `DB_PASSWORD`    | Contraseña de la base de datos           | `password`                                                      |
-| `DB_NAME`        | Nombre de la base de datos               | `bytestore_reviews`                                             |
-| `JWT_SECRET`     | Clave secreta para firmar los tokens JWT | `@y*&0a%K%7P0t@uQ^38HN$y4Z^PK#0zE7dem700Bbf&pC6HF$aU^ARkE@u$nn` |
-| `JWT_EXPIRES_IN` | Duración del token JWT                   | `30d`                                                           |
-
-### Ejemplo de archivo .env
-
-```env
-# Configuración del servidor
-PORT=3005
-NODE_ENV=development
-
-# Configuración de la base de datos
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=password
-DB_NAME=bytestore_reviews
-
-# Configuración JWT
-JWT_SECRET=@y*&0a%K%7P0t@uQ^38HN$y4Z^PK#0zE7dem700Bbf&pC6HF$aU^ARkE@u$nn
-JWT_EXPIRES_IN=30d
-```
-
-## 🚀 Ejecución
-
-### Desarrollo
-
-```bash
-npm run dev
-```
-
-El servidor se ejecutará en `http://localhost:3005` con recarga automática.
-
-### Producción
-
-```bash
-npm run build
-npm start
-```
-
-## 📚 Documentación de la API
-
-### Base URL
-
-```
-http://localhost:3005/api
-```
-
-### 🔐 Autenticación
+---
 
 Flujo sencillo para proteger las rutas de creación y modificación:
 
@@ -154,6 +90,7 @@ Flujo sencillo para proteger las rutas de creación y modificación:
 POST /users/sign-in
 Content-Type: application/json
 
+```js
 {
   "correo": "usuario@ejemplo.com",
   "password": "tu_password"
@@ -187,43 +124,18 @@ Authorization: <token>
 
 ### 📝 Endpoints de Reviews
 
-#### Obtener Reviews
+### Actualizar una reseña (Requiere autenticación)
 
-```http
-GET /api/reviews?page=1&limit=10&producto_id=1&calificacion=5
-```
+Para actualizar una reseña existente.
 
-**Query Parameters:**
+**PUT** `/:id`
 
-- `page` (number): Página actual (default: 1)
-- `limit` (number): Elementos por página (default: 10, max: 100)
-- `producto_id` (number): Filtrar por producto
-- `user_id` (number): Filtrar por usuario (solo admin)
-- `calificacion` (number): Filtrar por calificación (1-5)
-- `fecha_desde` (string): Fecha desde (ISO format)
-- `fecha_hasta` (string): Fecha hasta (ISO format)
-- `sort` (string): Campo de ordenamiento (`fecha_creacion`, `calificacion`)
-- `order` (string): Dirección (`asc`, `desc`)
-
-**Response:**
+**Cuerpo de la solicitud**
 
 ```json
 {
-  "total": 51,
-  "pages": 3,
-  "first": 1,
-  "next": 2,
-  "prev": null,
-  "data": [
-    {
-      "calificacion_id": 1,
-      "user_id": 1,
-      "producto_id": 1,
-      "calificacion": 5,
-      "comentario": "Excelente producto",
-      "fecha_creacion": "2024-01-15T10:30:00.000Z"
-    }
-  ]
+  "qualification": 3.2,
+  "comment": "No me gusto, una entrega muy lenta"
 }
 ```
 
@@ -234,29 +146,36 @@ POST /api/reviews
 Content-Type: application/json
 Authorization: <token>
 
+```json
 {
-  "producto_id": 1,
-  "calificacion": 5,
-  "comentario": "Excelente producto, muy recomendado"
+  "message": "Calificación actualizada",
+  "data": {
+    "id": 1,
+    "product_id": 2,
+    "qualification": "3.2",
+    "comment": "No me gusto, una entrega muy lenta",
+    "review_date": "2025-10-03T00:06:15.000Z",
+    "user_name": "José Hernández"
+  }
 }
 ```
 
-#### Obtener Review por ID
+---
 
-```http
-GET /api/reviews/:id
-```
+### Eliminar una reseña (Requiere autenticación)
 
-#### Actualizar Review
+Para eliminar una reseña existente.
 
 ```http
 PUT /api/reviews/:id
 Content-Type: application/json
 Authorization: <token>
 
+**Respuesta**
+
+```json
 {
-  "calificacion": 4,
-  "comentario": "Buen producto, actualizo mi review"
+  "message": "Reseña eliminada exitosamente"
 }
 ```
 

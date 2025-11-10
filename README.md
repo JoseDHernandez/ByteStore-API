@@ -10,6 +10,19 @@ Repositorio monorepo que contiene los servicios de la API para la aplicación [B
 
 Cada servicio es una aplicación independiente que se comunica con los demás a través de HTTP. Cada uno tiene su propia base de datos y lógica de negocio.
 
+Para acceder a los endpoints de cada servicio, use las siguientes URLs base:
+
+- `http://localhost:3000/users/` para el servicio de usuarios.
+- `http://localhost:3000/products/` para el servicio de productos.
+- `http://localhost:3000/orders/` para el servicio de pedidos.
+- `http://localhost:3000/reviews/` para el servicio de calificaciones.
+- `http://localhost:3000/carts/` para el servicio de carrito de compras.
+
+_Ejemplos:_
+
+- `http://localhost:3000/users/sign-in` para iniciar sesión en el servicio de usuarios.
+- `http://localhost:3000/products?limit=10&page=1` para obtener una lista paginada de productos en el servicio de productos.
+
 ---
 
 ## Tecnologías utilizadas
@@ -134,6 +147,13 @@ Para probar que los servicios están funcionando correctamente, puedes usar herr
 > **Nota**: Asegúrate de que los servicios estén corriendo y que las bases de datos estén inicializadas con los scripts SQL proporcionados en cada servicio. Ademas, de configurar las variables de entorno necesarias para cada servicio en caso de no usar Docker.
 
 **Importante:** La mayoría de los servicios requieren autenticación mediante JWT. Asegúrate de incluir un token válido en el encabezado `Authorization` de tus solicitudes. El token puede obtenerse del servicio de usuarios [(user-service)](https://github.com/JoseDHernandez/ByteStore-API/tree/main/user-service/README.md) al iniciar sesión.
+
+**Usuarios de prueba:**
+
+| Email                   | Contraseña      | Rol           |
+| ----------------------- | --------------- | ------------- |
+| jose.hernandez@test.com | Contrasea34^5G  | Administrador |
+| maria.lopez@test.com    | M4ria!Lopez2024 | Cliente       |
 
 ---
 

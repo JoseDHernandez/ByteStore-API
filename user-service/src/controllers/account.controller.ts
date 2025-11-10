@@ -44,7 +44,7 @@ export const login = async (req: Request, res: Response) => {
         role: userData[0].role,
         token,
       };
-      return res.status(200).json({ data: dto });
+      return res.status(200).json({ ...dto });
     }
     return res.status(404).json({ message: "User not found" });
   } catch (error) {
@@ -78,7 +78,7 @@ export const register = async (req: Request, res: Response) => {
       [data.email]
     );
     if (SearchUser[0]?.count && SearchUser[0]?.count !== 0)
-      return res.status(200).json({ message: "Existing account" });
+      return res.status(409).json({ message: "Existing account" });
     //Registrar
     const passwordHashed = await bcrypt.hash(data.password, 13);
     const [registerUser] = await db.query<ResultSetHeader>(
@@ -93,19 +93,56 @@ export const register = async (req: Request, res: Response) => {
       );
       if (!userData[0])
         return res.status(400).json({ message: "User not found" });
-      //retornar usuario creado
-      const Dto: UserResponseDTO = {
-        ...data,
+      //Generar token
+      const token = generateToken({
         id: userData[0].id,
         role: userData[0].role,
+      });
+      //retornar usuario creado
+      const Dto: UserResponseDTO = {
+        id: userData[0].id,
+        role: userData[0].role,
+        ...data,
+        token,
       };
-      return res
-        .status(201)
-        .json({ message: "The user was registered", data: Dto });
+      return res.status(201).json({ ...Dto });
     }
     return res
       .status(400)
       .json({ message: "Error to register a new user", data });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error", error });
+  }
+};
+//autenticar por jwt
+export const authToken = async (req: Request, res: Response) => {
+  if (!req.auth) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  try {
+    let id = req.auth.id;
+    //Obtener usuario
+    const [userData] = await db.query<User[]>(
+      "SELECT users.id as id, users.name as name,users.email as email,users.password as password,users.physical_address as physical_address, UPPER(roles.name) as role  FROM users INNER JOIN roles ON users.role = roles.id WHERE users.id=?",
+      [id]
+    );
+    if (userData[0]) {
+      //Generar token
+      const token = generateToken({
+        id: userData[0].id,
+        role: userData[0].role,
+      });
+      const dto: UserResponseDTO = {
+        id: userData[0].id,
+        name: userData[0].name,
+        email: userData[0].email,
+        physical_address: userData[0].physical_address,
+        role: userData[0].role,
+        token,
+      };
+      return res.status(200).json({ ...dto });
+    }
+    return res.status(404).json({ message: "User not found" });
   } catch (error) {
     return res.status(500).json({ message: "Server error", error });
   }

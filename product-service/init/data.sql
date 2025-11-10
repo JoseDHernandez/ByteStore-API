@@ -1,4 +1,6 @@
-alter database products character set utf8mb4 collate utf8mb4_spanish2_ci;
+CREATE DATABASE IF NOT EXISTS products CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+alter database products character set utf8mb4 collate utf8mb4_unicode_ci;
+USE products;
 create table `displays`(
 	`id` int not null auto_increment,
     `size` decimal(4,1) not null,
@@ -18,7 +20,7 @@ create table `processors`(
     `brand` varchar(200) not null,
     `family` varchar(500) not null,
     `model` varchar(200) not null unique,
-    `cores` int not null,
+    `cores` int not null ,
     `speed` varchar(1000) not null,
     primary key(`id`)
 );
@@ -36,12 +38,12 @@ create table `products`(
     `name` varchar(200) not null,
     `description` varchar(1000) not null,
     `price` decimal(10,2) not null,
-    `discount` int null,
+    `discount` int null default 0,
     `stock` int not null,
     `image` varchar(2000) not null,
     `brand_id` int not null,
     `model` varchar(200) not null unique,
-    `ram_capacity` int not null,
+    `ram_capacity` int not null ,
     `disk_capacity` int not null,
     `qualification` decimal(1,1) default 0.0,
     primary key (id),
@@ -52,6 +54,14 @@ create table `products`(
 );
 create index index_product_name on products (name);
 create index index_product_model on products (model);
+
+ALTER TABLE `products` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `processors` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `operating_systems` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `displays` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `brands` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+
 -- INSERTS FOR operating_systems
 INSERT INTO operating_systems ( `system`, distribution) VALUES ( 'Windows', 'Windows 11 Home');
 INSERT INTO operating_systems ( `system`, distribution) VALUES ( 'Windows', 'Windows 11');

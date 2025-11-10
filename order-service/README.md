@@ -110,7 +110,7 @@ JWT_EXPIRES_IN=30d
 CORS_ORIGIN=http://localhost:3000
 ```
 
-### 4. Configurar la base de datos
+## Endpoints
 
 #### Opción A: Usando el script automatizado
 
@@ -150,7 +150,7 @@ El servidor se ejecutará en `http://localhost:3004` con recarga automática.
 npm start
 ```
 
-## 📚 Documentación de la API
+---
 
 ### Base URL
 
@@ -158,7 +158,7 @@ npm start
 http://localhost:3004/api
 ```
 
-### 🔐 Autenticación
+Para obtener los detalles de un pedido específico utilizando su ID.
 
 Este servicio confía en tokens emitidos por el **user-service**. El flujo es simple:
 
@@ -172,6 +172,7 @@ Este servicio confía en tokens emitidos por el **user-service**. El flujo es si
 POST /users/sign-in
 Content-Type: application/json
 
+```json
 {
   "correo": "usuario@ejemplo.com",
   "password": "tu_password"
@@ -211,18 +212,15 @@ POST /api/orders
 Content-Type: application/json
 Authorization: <token>
 
+```json
 {
-  "user_id": "01991c0e-16f0-707f-9f6f-3614666caead",
-  "correo_usuario": "maria.lopez@test.com",
-  "direccion": "Calle 123 #45-67, Bogotá",
-  "nombre_completo": "María López",
+  "user_id": "01991c11-412e-7569-bb85-a4f77ba08bb7",
+  "correo_usuario": "maria.lopez@gmail.com",
+  "direccion": "Celle azul, casa roja",
+  "nombre_completo": "Maria Fernanda Lopez Garcia",
   "productos": [
     {
       "producto_id": 1,
-      "cantidad": 2
-    },
-    {
-      "producto_id": 3,
       "cantidad": 1
     }
   ]
@@ -250,10 +248,36 @@ PUT /api/orders/:id
 Content-Type: application/json
 Authorization: <token>
 
+```json
 {
-  "estado": "procesando",
-  "direccion": "Nueva dirección de entrega",
-  "fecha_entrega": "2024-12-25T10:00:00.000Z"
+  "message": "Orden creada exitosamente",
+  "data": {
+    "orden_id": 12,
+    "user_id": "01991c11-412e-7569-bb85-a4f77ba08bb7",
+    "correo_usuario": "maria.lopez@gmail.com",
+    "direccion": "Celle azul, casa roja",
+    "nombre_completo": "Maria Fernanda Lopez Garcia",
+    "estado": "pendiente",
+    "total": "762349.68",
+    "fecha_pago": "2025-09-28T04:02:37.000Z",
+    "fecha_entrega": null,
+    "productos": [
+      {
+        "orden_productos_id": 13,
+        "orden_id": 12,
+        "producto_id": 1,
+        "nombre": "Producto Premium 1",
+        "precio": "876264.00",
+        "descuento": "13.00",
+        "marca": "ASUS",
+        "modelo": "Modelo-1-2025",
+        "cantidad": 1,
+        "imagen": "https://example.com/images/producto-1.jpg",
+        "created_at": "2025-09-28T04:02:37.000Z",
+        "updated_at": "2025-09-28T04:02:37.000Z"
+      }
+    ]
+  }
 }
 ```
 
@@ -271,7 +295,7 @@ GET /api/orders/stats
 Authorization: <token>
 ```
 
-### 🔄 Endpoints de Estados
+Para actualizar los detalles de un pedido existente.
 
 #### Actualizar Estado (Solo Admin)
 
@@ -280,9 +304,13 @@ PUT /api/orders/:id/status
 Content-Type: application/json
 Authorization: <admin_token>
 
+**Cuerpo de la solicitud**
+
+```json
 {
-  "estado": "procesando",
-  "motivo": "Orden confirmada y en preparación"
+  "direccion": "Casa nueva, calle verde",
+  "estado": "enviado",
+  "fecha_entrega": "2025-09-28T05:07:37.000Z"
 }
 ```
 
@@ -300,8 +328,36 @@ PUT /api/orders/:id/cancel
 Content-Type: application/json
 Authorization: <token>
 
+```json
 {
-  "motivo": "Cliente solicitó cancelación"
+  "message": "Orden actualizada exitosamente",
+  "data": {
+    "orden_id": 12,
+    "user_id": "01991c11-412e-7569-bb85-a4f77ba08bb7",
+    "correo_usuario": "maria.lopez@gmail.com",
+    "direccion": "Casa nueva, calle verde",
+    "nombre_completo": "Maria Fernanda Lopez Garcia",
+    "estado": "enviado",
+    "total": "762349.68",
+    "fecha_pago": "2025-09-28T04:02:37.000Z",
+    "fecha_entrega": "2025-09-28T05:07:37.000Z",
+    "productos": [
+      {
+        "orden_productos_id": 13,
+        "orden_id": 12,
+        "producto_id": 1,
+        "nombre": "Producto Premium 1",
+        "precio": "876264.00",
+        "descuento": "13.00",
+        "marca": "ASUS",
+        "modelo": "Modelo-1-2025",
+        "cantidad": 1,
+        "imagen": "https://example.com/images/producto-1.jpg",
+        "created_at": "2025-09-28T04:02:37.000Z",
+        "updated_at": "2025-09-28T04:02:37.000Z"
+      }
+    ]
+  }
 }
 ```
 
@@ -312,14 +368,18 @@ GET /api/orders/status/stats
 Authorization: <token>
 ```
 
-## 🔐 Estados de Órdenes
+### Eliminar un pedido
 
-El sistema maneja los siguientes estados con transiciones controladas:
+Para eliminar un pedido existente.
 
-```
-pendiente → procesando → enviado → entregado
-    ↓           ↓
- cancelado   cancelado
+**DELETE** `/:id`
+
+**Respuesta**
+
+```json
+{
+  "message": "Orden eliminada exitosamente"
+}
 ```
 
 ### Estados Disponibles:
@@ -330,7 +390,7 @@ pendiente → procesando → enviado → entregado
 - **entregado**: Orden completada (estado final)
 - **cancelado**: Orden cancelada (estado final)
 
-## 🗄️ Estructura de la Base de Datos
+## Entrega y geolocalización
 
 ### Tabla: orders
 
@@ -350,49 +410,62 @@ id (PK) | orden_id (FK) | producto_id | cantidad | precio_unitario | subtotal
 id (PK) | orden_id (FK) | estado_anterior | estado_nuevo | motivo | changed_by | changed_at
 ```
 
-## 📁 Estructura del Proyecto
+- Crear orden con entrega a domicilio (dirección sin geolocalización):
 
-```
-orders-service/
-├── src/
-│   ├── controllers/
-│   │   ├── orders.controller.ts
-│   │   ├── orderProducts.controller.ts
-│   │   └── orderStatus.controller.ts
-│   ├── middleware/
-│   │   └── auth.ts
-│   ├── routes/
-│   │   ├── orders.routes.ts
-│   │   └── orderStatus.routes.ts
-│   ├── utils/
-│   │   └── jwt.ts
-│   ├── db.ts
-│   └── index.ts
-├── init/
-│   └── data.sql
-├── package.json
-├── tsconfig.json
-└── README.md
+```bash
+curl -X POST "http://localhost:3004/" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "USER_UUID",
+    "correo_usuario": "usuario@example.com",
+    "nombre_completo": "Nombre Apellido",
+    "tipo_entrega": "domicilio",
+    "direccion": "Calle 123 #45-67, Ciudad",
+    "metodo_pago": "tarjeta",
+    "tarjeta": { "tipo": "debito", "marca": "VISA", "numero": "4111111111111111" },
+    "productos": [{ "producto_id": 1, "cantidad": 1 }]
+  }'
 ```
 
-## 🚨 Códigos de Error Comunes
+- Crear orden con entrega a domicilio usando geolocalización:
 
-- **400**: Datos inválidos o faltantes
-- **401**: Token JWT inválido o faltante
-- **403**: Permisos insuficientes
-- **404**: Recurso no encontrado
-- **409**: Conflicto (ej: transición de estado inválida)
-- **500**: Error interno del servidor
+```bash
+curl -X POST "http://localhost:3004/" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "USER_UUID",
+    "correo_usuario": "usuario@example.com",
+    "nombre_completo": "Nombre Apellido",
+    "tipo_entrega": "domicilio",
+    "geolocalizacion_habilitada": true,
+    "latitud": 6.25184,
+    "longitud": -75.56359,
+    "metodo_pago": "pse",
+    "pse_reference": "REF-123456",
+    "productos": [{ "producto_id": 2, "cantidad": 2 }]
+  }'
+```
 
-## 🔒 Seguridad
+- Crear orden para recoger en tienda (sin costo de envío):
 
-- Autenticación JWT obligatoria
-- Validación de entrada con Zod
-- Control de acceso basado en roles
-- Sanitización de consultas SQL
-- Headers de seguridad configurados
+```bash
+curl -X POST "http://localhost:3004/" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "USER_UUID",
+    "correo_usuario": "usuario@example.com",
+    "nombre_completo": "Nombre Apellido",
+    "tipo_entrega": "recoger",
+    "metodo_pago": "efectivo",
+    "cash_on_delivery": true,
+    "productos": [{ "producto_id": 3, "cantidad": 1 }]
+  }'
+```
 
-## 🤝 Contribución
+- Actualizar una orden para habilitar geolocalización y recalcular envío:
 
 1. Fork el proyecto
 2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)

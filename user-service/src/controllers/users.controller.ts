@@ -56,7 +56,7 @@ export const getUserById = async (req: Request, res: Response) => {
         role: req.auth?.role === "ADMINISTRADOR" ? "ADMINISTRADOR" : "CLIENTE",
         id: data.id,
       };
-      return res.status(200).json({ data: dto });
+      return res.status(200).json({ ...dto });
     }
     return res.status(404).json({ message: "Account not found" });
   } catch (error) {
@@ -150,7 +150,7 @@ export const updateUser = async (req: Request, res: Response) => {
         ...data,
         role: req.auth?.role === "ADMINISTRADOR" ? "ADMINISTRADOR" : "CLIENTE",
       };
-      return res.status(200).json({ message: "Account updated", data: dto });
+      return res.status(200).json({ ...dto });
     }
     return res.status(304).json({ message: "Account not updated" });
   } catch (error) {
@@ -231,9 +231,7 @@ export const changeRole = async (req: Request, res: Response) => {
         physical_address: userQuery[0].physical_address,
         role: rol.toUpperCase(),
       };
-      return res
-        .status(200)
-        .json({ message: `Role changed to: ${rol} for ${id}`, data });
+      return res.status(200).json({ ...data });
     }
     return res.status(304).json({ message: "Role not changed" });
   } catch (error) {

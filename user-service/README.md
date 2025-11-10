@@ -17,8 +17,10 @@ Este servicio permite **registrar, autenticar, actualizar y eliminar usuarios**,
 ## Índice
 
 - [Variables de entorno](#variables-de-entorno)
+- [Usuarios de prueba](#usuarios-de-prueba)
 - [Peticiones de la API](#peticiones-de-la-api)
   - [Autenticación](#autenticación)
+    - [Validar token](#validar-token)
     - [Registro de usuario - Sign up](#registro-de-usuario---sign-up)
     - [Inicio de sesión - Sign in](#inicio-de-sesión---sign-in)
   - [Obtener usuario](#obtener-usuario)
@@ -42,20 +44,27 @@ Este servicio permite **registrar, autenticar, actualizar y eliminar usuarios**,
 
 ---
 
+## Usuarios de prueba
+
+| Email                   | Contraseña      | Rol           |
+| ----------------------- | --------------- | ------------- |
+| jose.hernandez@test.com | Contrasea34^5G  | Administrador |
+| maria.lopez@test.com    | M4ria!Lopez2024 | Cliente       |
+
+---
+
 ## Peticiones de la API
 
 Todas las respuestas exitosas (`200`, `201`) tienen la siguiente estructura:
 
 ```json
 {
-  "data": {
-    "id": "string (uuid)",
-    "name": "string",
-    "email": "string",
-    "physical_address": "string",
-    "role": "ADMINISTRADOR | CLIENTE",
-    "token": "string (jwt, solo se retorna en sign-in)"
-  }
+  "id": "string (uuid)",
+  "name": "string",
+  "email": "string",
+  "physical_address": "string",
+  "role": "ADMINISTRADOR | CLIENTE",
+  "token": "string (jwt, solo se retorna en sign-in)"
 }
 ```
 
@@ -128,7 +137,30 @@ Las rutas protegidas requieren el header:
 Authorization: <token>
 ```
 
-El token se obtiene en `POST /users/sign-in`.
+El token se obtiene en `POST /users/sign-in` o `POST /users/sign-up`.
+
+---
+
+### Validar token
+
+Se puede autenticar un usuario enviando el token JWT en el encabezado de autorización y sin datos en el cuerpo.
+
+**POST** `/users/auth`
+
+**Respuesta:**
+
+```json
+{
+  "id": "019a6486-7def-75eb-a420-29810867f66f",
+  "name": "Antonio Rojas Triana",
+  "email": "anto893@example.com",
+  "physical_address": "Casa roja #56",
+  "role": "CLIENTE",
+  "token": "eyJhbGci......"
+}
+```
+
+---
 
 ### Registro de usuario - Sign up
 
@@ -149,14 +181,12 @@ El token se obtiene en `POST /users/sign-in`.
 
 ```json
 {
-  "data": {
-    "id": "0199264b-d200-7885-bf3b-6e62724ee3e0",
-    "name": "José Hernández",
-    "email": "correo@ejemplo.com",
-    "physical_address": "Casa roja #56",
-    "role": "CLIENTE",
-    "token": "jwt..."
-  }
+  "id": "0199264b-d200-7885-bf3b-6e62724ee3e0",
+  "name": "José Hernández",
+  "email": "correo@ejemplo.com",
+  "physical_address": "Casa roja #56",
+  "role": "CLIENTE",
+  "token": "jwt..."
 }
 ```
 
@@ -179,23 +209,14 @@ El token se obtiene en `POST /users/sign-in`.
 
 ```json
 {
-  "data": {
-    "id": "01991c0e-16f0-707f-9f6f-3614666caead",
-    "name": "José David Hernández",
-    "email": "correo@ejemplo.com",
-    "physical_address": "Calle 12 #67-56",
-    "role": "ADMINISTRADOR",
-    "token": "jwt..."
-  }
+  "id": "01991c0e-16f0-707f-9f6f-3614666caead",
+  "name": "José David Hernández",
+  "email": "correo@ejemplo.com",
+  "physical_address": "Calle 12 #67-56",
+  "role": "ADMINISTRADOR",
+  "token": "jwt..."
 }
 ```
-
-**Usuarios de prueba:**
-
-| Email                   | Contraseña      | Rol           |
-| ----------------------- | --------------- | ------------- |
-| jose.hernandez@test.com | Contrasea34^5G  | Administrador |
-| maria.lopez@test.com    | M4ria!Lopez2024 | Cliente       |
 
 ---
 
@@ -209,13 +230,11 @@ Retorna los datos del usuario por su ID.
 
 ```json
 {
-  "data": {
-    "id": "01991c0e-16f0-707f-9f6f-3614666caead",
-    "name": "José David Hernández",
-    "email": "jose.hernandez@test.com",
-    "physical_address": "Calle 12 #67-56",
-    "role": "ADMINISTRADOR"
-  }
+  "id": "01991c0e-16f0-707f-9f6f-3614666caead",
+  "name": "José David Hernández",
+  "email": "jose.hernandez@test.com",
+  "physical_address": "Calle 12 #67-56",
+  "role": "ADMINISTRADOR"
 }
 ```
 
@@ -355,14 +374,11 @@ Una contraseña debe tener de 8 a 20 caracteres, al menos una letra mayúscula, 
 
 ```json
 {
-  "message": "Role changed to: CLIENTE for 01991c0e-16f0-707f-9f6f-3614666caead",
-  "data": {
-    "id": "01991c0e-16f0-707f-9f6f-3614666caead",
-    "name": "Nuevo nombre",
-    "email": "nuevo@correo.com",
-    "physical_address": "Nueva dirección",
-    "role": "CLIENTE"
-  }
+  "id": "01991c0e-16f0-707f-9f6f-3614666caead",
+  "name": "Nuevo nombre",
+  "email": "nuevo@correo.com",
+  "physical_address": "Nueva dirección",
+  "role": "CLIENTE"
 }
 ```
 

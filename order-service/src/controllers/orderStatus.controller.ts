@@ -3,40 +3,46 @@ import { db } from '../db.js';
 import type { RowDataPacket } from 'mysql2';
 import { z } from 'zod';
 
-// Estados válidos y transiciones permitidas
-const ESTADOS_VALIDOS = ['pendiente', 'procesando', 'enviado', 'entregado', 'cancelado'] as const;
+// Lista de estados válidos de una orden.
+// Se usa para validar entrada y controlar el flujo del estado.
+const ESTADOS_VALIDOS = ['en_proceso', 'cancelado', 'retrasado', 'entregado'] as const;
+// Tipo derivado de la lista de estados para mayor seguridad en el código.
 type EstadoOrden = typeof ESTADOS_VALIDOS[number];
 
-// Definir transiciones válidas de estado
+// Mapa de transiciones válidas entre estados.
+// Permite verificar si una transición solicitada está permitida según el estado actual.
 const TRANSICIONES_VALIDAS: Record<EstadoOrden, EstadoOrden[]> = {
-  pendiente: ['procesando', 'cancelado'],
-  procesando: ['enviado', 'cancelado'],
-  enviado: ['entregado'],
+  en_proceso: ['retrasado', 'entregado', 'cancelado'],
+  retrasado: ['entregado', 'cancelado'],
   entregado: [], // Estado final
   cancelado: [], // Estado final
 };
 
-// Esquemas de validación
+// Esquema de validación para actualizar estado.
+// Incluye un motivo opcional y una fecha de entrega opcional.
 const updateStatusSchema = z.object({
   estado: z.enum(ESTADOS_VALIDOS),
   motivo: z.string().min(1).max(500).optional(),
-  fecha_entrega: z.string().datetime().optional(),
+  fecha_entrega_original: z.string().datetime().optional(),
+  fecha_entrega_retrasada: z.string().datetime().optional(),
 });
 
+// Esquema para validar y transformar el parámetro ID a número.
 const orderIdSchema = z.object({
   id: z.string().transform((val) => parseInt(val, 10)),
 });
 
 /**
- * Actualizar estado de una orden con validaciones de flujo
- * @param req - Request con ID de orden y nuevo estado
- * @param res - Response con confirmación
+ * Actualiza el estado de una orden y registra el cambio.
+ * Requiere rol ADMINISTRADOR. Valida transición y fija `fecha_entrega` si aplica.
+ * @param req Request con ID y nuevo estado
+ * @param res Respuesta con confirmación
  */
 export async function updateOrderStatus(req: Request, res: Response): Promise<Response | void> {
   try {
     const { id } = orderIdSchema.parse(req.params);
     const validatedData = updateStatusSchema.parse(req.body);
-    const usuario_id = req.auth!.id;
+    const usuario_id = Number(req.auth!.id); // normalizado a number
     const isAdmin = req.auth!.role === 'ADMINISTRADOR';
 
     // Solo administradores pueden cambiar estados
@@ -75,26 +81,45 @@ export async function updateOrderStatus(req: Request, res: Response): Promise<Re
     const updateFields: string[] = ['estado = ?'];
     const updateValues: any[] = [nuevoEstado];
 
-    // Si se marca como entregado, establecer fecha de entrega
+    const toMySql = (iso?: string) =>
+      iso ? iso.replace('T', ' ').replace('.000Z', '') : undefined;
+
+    // Si se marca como retrasado, establecer fecha de entrega retrasada
+    if (nuevoEstado === 'retrasado' && validatedData.fecha_entrega_retrasada) {
+      updateFields.push('fecha_entrega_retrasada = ?');
+      updateValues.push(toMySql(validatedData.fecha_entrega_retrasada));
+    }
+
+    // Si se marca como entregado, establecer fecha de entrega (retrasada si hubo retraso)
     if (nuevoEstado === 'entregado') {
-      updateFields.push('fecha_entrega = ?');
-      updateValues.push(validatedData.fecha_entrega || new Date().toISOString());
+      const fechaFinalIso = validatedData.fecha_entrega_retrasada || new Date().toISOString();
+      updateFields.push('fecha_entrega_retrasada = ?');
+      updateValues.push(toMySql(fechaFinalIso));
     }
 
     updateValues.push(id);
 
-    // Actualizar orden
-    await db.query(
-      `UPDATE orders SET ${updateFields.join(', ')} WHERE orden_id = ?`,
-      updateValues
-    );
+    // Ejecutar actualización e inserción en una transacción para asegurar atomicidad
+    await db.query('START TRANSACTION');
+    try {
+      // Actualizar orden
+      await db.query(
+        `UPDATE orders SET ${updateFields.join(', ')} WHERE orden_id = ?`,
+        updateValues
+      );
 
-    // Registrar cambio de estado en historial
-    await db.query(
-      `INSERT INTO order_status_history (orden_id, estado_anterior, estado_nuevo, motivo, changed_by, changed_at)
-       VALUES (?, ?, ?, ?, ?, NOW())`,
-      [id, estadoActual, nuevoEstado, validatedData.motivo || null, usuario_id]
-    );
+      // Registrar cambio de estado en historial
+      await db.query(
+        `INSERT INTO order_status_history (orden_id, estado_anterior, estado_nuevo, motivo, changed_by, changed_at)
+         VALUES (?, ?, ?, ?, ?, NOW())`,
+        [id, estadoActual, nuevoEstado, validatedData.motivo || null, usuario_id]
+      );
+
+      await db.query('COMMIT');
+    } catch (err) {
+      await db.query('ROLLBACK');
+      throw err;
+    }
 
     // Obtener orden actualizada
     const [updatedOrder] = await db.query<RowDataPacket[]>(
@@ -106,7 +131,8 @@ export async function updateOrderStatus(req: Request, res: Response): Promise<Re
         estado,
         total,
         DATE_FORMAT(fecha_pago, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_pago,
-        DATE_FORMAT(fecha_entrega, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_entrega
+        DATE_FORMAT(fecha_entrega_original, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_entrega_original,
+        DATE_FORMAT(fecha_entrega_retrasada, '%Y-%m-%dT%H:%i:%s.000Z') as fecha_entrega_retrasada
       FROM orders WHERE orden_id = ?`,
       [id]
     );
@@ -133,14 +159,15 @@ export async function updateOrderStatus(req: Request, res: Response): Promise<Re
 }
 
 /**
- * Obtener historial de cambios de estado de una orden
- * @param req - Request con ID de orden
- * @param res - Response con historial
+ * Devuelve el historial de cambios de estado de una orden.
+ * Requiere dueño o ADMINISTRADOR.
+ * @param req Request con ID de orden
+ * @param res Response con historial
  */
 export async function getOrderStatusHistory(req: Request, res: Response): Promise<Response | void> {
   try {
     const { id } = orderIdSchema.parse(req.params);
-    const usuario_id = req.auth!.id;
+    const usuario_id = Number(req.auth!.id); // normalizado a number
     const isAdmin = req.auth!.role === 'ADMINISTRADOR';
 
     // Verificar que la orden existe
@@ -154,11 +181,9 @@ export async function getOrderStatusHistory(req: Request, res: Response): Promis
     }
 
     // Verificar permisos
-    const orderData = order[0];
-    if (!orderData) {
-      return res.status(404).json({ message: "Orden no encontrada" });
-    }
-    if (!isAdmin && orderData.user_id !== usuario_id) {
+    const orderRow = order[0]!; // referencia no nula tras validar longitud
+    const orderUserId = typeof orderRow.user_id === 'string' ? Number(orderRow.user_id) : orderRow.user_id;
+    if (!isAdmin && orderUserId !== usuario_id) {
       return res.status(403).json({
         message: 'No tienes permisos para ver el historial de esta orden',
       });
@@ -195,9 +220,10 @@ export async function getOrderStatusHistory(req: Request, res: Response): Promis
 }
 
 /**
- * Cancelar una orden
- * @param req - Request con ID de orden y motivo
- * @param res - Response con confirmación
+ * Cancela una orden si la transición es válida.
+ * Requiere dueño o ADMINISTRADOR.
+ * @param req Request con ID de orden y motivo
+ * @param res Response con confirmación
  */
 export async function cancelOrder(req: Request, res: Response): Promise<Response | void> {
   try {
@@ -206,7 +232,7 @@ export async function cancelOrder(req: Request, res: Response): Promise<Response
       motivo: z.string().min(1).max(500),
     }).parse(req.body);
     
-    const usuario_id = req.auth!.id;
+    const usuario_id = Number(req.auth!.id); // normalizado a number
     const isAdmin = req.auth!.role === 'ADMINISTRADOR';
 
     // Obtener orden actual
@@ -219,19 +245,17 @@ export async function cancelOrder(req: Request, res: Response): Promise<Response
       return res.status(404).json({ message: 'Orden no encontrada' });
     }
 
-    const order = orderResult[0];
-    if (!order) {
-      return res.status(404).json({ message: 'Orden no encontrada' });
-    }
+    const orderRow = orderResult[0]!; // referencia no nula tras validar longitud
+    const orderUserId = typeof orderRow.user_id === 'string' ? Number(orderRow.user_id) : orderRow.user_id;
     
     // Verificar permisos (propietario o admin)
-    if (!isAdmin && order.user_id !== usuario_id) {
+    if (!isAdmin && orderUserId !== usuario_id) {
       return res.status(403).json({
         message: 'No tienes permisos para cancelar esta orden',
       });
     }
-
-    const estadoActual = order.estado as EstadoOrden;
+    
+    const estadoActual = orderRow.estado as EstadoOrden;
 
     // Verificar que se puede cancelar
     if (!TRANSICIONES_VALIDAS[estadoActual].includes('cancelado')) {
@@ -243,18 +267,27 @@ export async function cancelOrder(req: Request, res: Response): Promise<Response
       });
     }
 
-    // Cancelar orden
-    await db.query(
-      'UPDATE orders SET estado = "cancelado" WHERE orden_id = ?',
-      [id]
-    );
+    // Ejecutar cancelación y registro en historial dentro de transacción
+    await db.query('START TRANSACTION');
+    try {
+      // Cancelar orden
+      await db.query(
+        'UPDATE orders SET estado = "cancelado" WHERE orden_id = ?',
+        [id]
+      );
 
-    // Registrar cancelación en historial
-    await db.query(
-      `INSERT INTO order_status_history (orden_id, estado_anterior, estado_nuevo, motivo, changed_by, changed_at)
-       VALUES (?, ?, 'cancelado', ?, ?, NOW())`,
-      [id, estadoActual, motivo, usuario_id]
-    );
+      // Registrar cancelación en historial
+      await db.query(
+        `INSERT INTO order_status_history (orden_id, estado_anterior, estado_nuevo, motivo, changed_by, changed_at)
+         VALUES (?, ?, 'cancelado', ?, ?, NOW())`,
+        [id, estadoActual, motivo, usuario_id]
+      );
+
+      await db.query('COMMIT');
+    } catch (err) {
+      await db.query('ROLLBACK');
+      throw err;
+    }
 
     res.status(200).json({
       message: 'Orden cancelada exitosamente',
@@ -273,13 +306,14 @@ export async function cancelOrder(req: Request, res: Response): Promise<Response
 }
 
 /**
- * Obtener estadísticas de estados de órdenes
- * @param req - Request
- * @param res - Response con estadísticas
+ * Estadísticas de estados: métricas, tendencias y tiempos promedio.
+ * Restringe por usuario si no es ADMINISTRADOR.
+ * @param req Request
+ * @param res Response con estadísticas
  */
 export async function getOrderStatusStats(req: Request, res: Response): Promise<Response | void> {
   try {
-    const usuario_id = req.auth!.id;
+    const usuario_id = Number(req.auth!.id); // normalizado a number
     const isAdmin = req.auth!.role === 'ADMINISTRADOR';
 
     let userCondition = '';

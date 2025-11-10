@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { verifyToken } from "../utils/jwt.ts";
+import { generateToken, verifyToken } from "../utils/jwt.ts";
 import type { RowDataPacket } from "mysql2";
 import { db } from "../db.ts";
 import type { JWTData } from "../types/token.ts";
