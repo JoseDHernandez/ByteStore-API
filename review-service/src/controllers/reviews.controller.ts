@@ -18,12 +18,23 @@ import {
   productIdSchema,
 } from '../schemas/review.schema.ts';
 
+/** Common SELECT fields used when returning a review joined with the user */
+const REVIEW_SELECT_FIELDS = `
+  r.id as id,
+  r.product_id as product_id,
+  r.user_id as user_id,
+  r.qualification as qualification,
+  r.comment as comment,
+  r.review_date as review_date,
+  u.user_name as user_name
+`;
+
 /** DB row type for review data with MySQL result metadata */
 type ReviewRow = RowDataPacket & ReviewResponseDTO;
 /** DB row type for count queries - safe array destructuring */
 type CountRow = RowDataPacket & { total: number };
 /** DB row type for ownership checks */
-type ReviewOwnerRow = RowDataPacket & { usuario_id: string };
+type ReviewOwnerRow = RowDataPacket & { user_id: string };
 
 /**
  * Create a new product review
@@ -34,14 +45,15 @@ type ReviewOwnerRow = RowDataPacket & { usuario_id: string };
 export async function createReview(req: Request, res: Response) {
   try {
     /** Validate request body against schema - throws ZodError if invalid */
-    const validatedData = createReviewSchema.parse(req.body);
+    const { product_id, qualification, comment, user_name } =
+      createReviewSchema.parse(req.body);
     /** Extract authenticated user ID from JWT token */
-    const usuario_id = req.auth!.id;
+    const userId = req.auth!.id;
 
     /** Check if user already reviewed this product (prevent duplicates) */
     const [existingReview] = await db.query<RowDataPacket[]>(
-      'SELECT calificacion_id FROM calificaciones WHERE producto_id = ? AND usuario_id = ?',
-      [validatedData.producto_id, usuario_id]
+      'SELECT id FROM reviews WHERE product_id = ? AND user_id = ?',
+      [product_id, userId]
     );
 
     /** Return 409 Conflict if review already exists for this user/product pair */
@@ -51,35 +63,21 @@ export async function createReview(req: Request, res: Response) {
           'Ya has reseñado este producto. Puedes actualizar tu reseña existente.',
       });
     }
-    const data = validatedData;
-    // Consultar usuario existente
-
-    const [existingUser] = await db.query<RowDataPacket[]>(
-      "SELECT id FROM users WHERE id=?",
-      [user_id]
+    /** Ensure we have the latest user_name stored for the reviewer */
+    await db.query<ResultSetHeader>(
+      'INSERT INTO users (id, user_name) VALUES (?, ?) ON DUPLICATE KEY UPDATE user_name = VALUES(user_name)',
+      [userId, user_name]
     );
-    //crear usuario
-    if (existingUser.length === 0) {
-      const [registerUser] = await db.query<ResultSetHeader>(
-        "INSERT INTO users (id, user_name) VALUES (?,?)",
-        [user_id, data.user_name]
-      );
-    }
 
-    /** Insert new review into database with current timestamp */
+    // Insert new review into database with current timestamp
     const [result] = await db.query<ResultSetHeader>(
-      'INSERT INTO calificaciones (producto_id, usuario_id, calificacion, comentario, fecha) VALUES (?, ?, ?, ?, NOW())',
-      [
-        validatedData.producto_id,
-        usuario_id,
-        validatedData.calificacion,
-        validatedData.comentario || null,
-      ]
+      'INSERT INTO reviews (product_id, user_id, qualification, comment) VALUES (?, ?, ?, ?)',
+      [product_id, userId, qualification, comment ?? null]
     );
 
     /** Fetch the newly created review to return complete data */
     const [newReview] = await db.query<ReviewRow[]>(
-      `SELECT 
+      `SELECT
         ${REVIEW_SELECT_FIELDS}
       FROM reviews as r INNER JOIN users as u ON r.user_id = u.id
       WHERE r.id = ?`,
@@ -126,71 +124,65 @@ export async function getReviews(req: Request, res: Response) {
     } = validatedQuery;
 
     /** Build dynamic SQL query with filters */
+    const conditions: string[] = [];
+    const params: Array<string | number> = [];
+
+    if (product_id) {
+      conditions.push('r.product_id = ?');
+      params.push(product_id);
+    }
+
+    if (user_id) {
+      conditions.push('r.user_id = ?');
+      params.push(user_id);
+    }
+
+    if (qualification_min !== undefined) {
+      conditions.push('r.qualification >= ?');
+      params.push(qualification_min);
+    }
+
+    if (qualification_max !== undefined) {
+      conditions.push('r.qualification <= ?');
+      params.push(qualification_max);
+    }
+
     let baseQuery = `
-      SELECT 
+      SELECT
         ${REVIEW_SELECT_FIELDS}
-      FROM reviews as r INNER JOIN users as u ON r.user_id = u.id 
+      FROM reviews as r INNER JOIN users as u ON r.user_id = u.id
     `;
+    let countQuery = 'SELECT COUNT(*) as total FROM reviews as r';
 
-    /** Count query for total results (same filters as main query) */
-    let countQuery = 'SELECT COUNT(*) as total FROM calificaciones c WHERE 1=1';
-    /** Parameterized query values - prevents SQL injection */
-    const queryParams: any[] = [];
-
-    /** Apply optional filters based on query parameters */
-    if (producto_id) {
-      baseQuery += ' AND c.producto_id = ?';
-      countQuery += ' AND c.producto_id = ?';
-      queryParams.push(producto_id);
-    }
-
-    if (usuario_id) {
-      baseQuery += ' AND c.usuario_id = ?';
-      countQuery += ' AND c.usuario_id = ?';
-      queryParams.push(usuario_id);
-    }
-
-    if (calificacion_min) {
-      baseQuery += ' AND c.calificacion >= ?';
-      countQuery += ' AND c.calificacion >= ?';
-      queryParams.push(calificacion_min);
-    }
-
-    if (calificacion_max) {
-      baseQuery += ' AND c.calificacion <= ?';
-      countQuery += ' AND c.calificacion <= ?';
-      queryParams.push(calificacion_max);
+    if (conditions.length > 0) {
+      const whereClause = ` WHERE ${conditions.join(' AND ')}`;
+      baseQuery += whereClause;
+      countQuery += whereClause;
     }
 
     /** Apply sorting - default is by date descending */
-    if (sort === 'fecha') {
-      baseQuery += ` ORDER BY c.fecha ${order}`;
-    } else if (sort === 'calificacion') {
-      baseQuery += ` ORDER BY c.calificacion ${order}`;
-    }
+    const sortColumn =
+      sort === 'qualification' ? 'r.qualification' : 'r.review_date';
+    baseQuery += ` ORDER BY ${sortColumn} ${order}`;
 
     /** Get total count for pagination metadata */
-    const [totalResult] = await db.query<CountRow[]>(countQuery, queryParams);
-    /** Safe destructuring - defaults to 0 if no results */
+    const [totalResult] = await db.query<CountRow[]>(countQuery, params);
     const [{ total } = { total: 0 }] = totalResult;
 
     /** Calculate pagination values */
-    const pages = Math.ceil(total / limit);
-    /** Clamp current page to valid range [1, pages] */
-    const currentPage = Math.max(1, Math.min(page, pages));
+    const pages = total > 0 ? Math.ceil(total / limit) : 0;
+    const currentPage = pages > 0 ? Math.max(1, Math.min(page, pages)) : 1;
     const offset = (currentPage - 1) * limit;
-    const first = 1;
-    /** Previous page link (null if on first page) */
-    const prev = currentPage > 1 ? currentPage - 1 : null;
-    /** Next page link (null if on last page) */
-    const next = currentPage < pages ? currentPage + 1 : null;
-
-    /** Add pagination to query */
-    baseQuery += ' LIMIT ? OFFSET ?';
-    queryParams.push(limit, offset);
+    const first = pages > 0 ? 1 : 0;
+    const prev = pages > 0 && currentPage > 1 ? currentPage - 1 : null;
+    const next = pages > 0 && currentPage < pages ? currentPage + 1 : null;
 
     /** Execute main data query */
-    const [reviews] = await db.query<ReviewRow[]>(baseQuery, queryParams);
+    const dataParams = [...params, limit, offset];
+    const [reviews] = await db.query<ReviewRow[]>(
+      `${baseQuery} LIMIT ? OFFSET ?`,
+      dataParams
+    );
 
     /** Build standardized pagination response */
     const response: ReviewsPaginatedResponse = {
@@ -226,7 +218,7 @@ export async function getReviewById(req: Request, res: Response) {
 
     /** Query review by primary key */
     const [review] = await db.query<ReviewRow[]>(
-      `SELECT 
+      `SELECT
         ${REVIEW_SELECT_FIELDS}
       FROM reviews as r INNER JOIN users as u ON r.user_id = u.id
       WHERE r.id = ?`,
@@ -263,12 +255,12 @@ export async function updateReview(req: Request, res: Response) {
     const { id } = reviewIdSchema.parse(req.params);
     const validatedData = updateReviewSchema.parse(req.body);
     /** Get authenticated user info from token */
-    const usuario_id = req.auth!.id;
+    const userId = req.auth!.id;
     const isAdmin = req.auth!.role === 'ADMINISTRADOR';
 
     /** Check if review exists and get owner ID */
     const [existingReview] = await db.query<ReviewOwnerRow[]>(
-      'SELECT usuario_id FROM calificaciones WHERE calificacion_id = ?',
+      'SELECT user_id FROM reviews WHERE id = ?',
       [id]
     );
 
@@ -279,7 +271,7 @@ export async function updateReview(req: Request, res: Response) {
     }
 
     // Verificar permisos (propietario o admin)
-    if (!isAdmin && reviewOwner.usuario_id !== usuario_id) {
+    if (!isAdmin && reviewOwner.user_id !== userId) {
       return res.status(403).json({
         message: 'No tienes permisos para actualizar esta reseña',
       });
@@ -289,15 +281,14 @@ export async function updateReview(req: Request, res: Response) {
     const updateFields: string[] = [];
     const updateValues: any[] = [];
 
-    /** Add rating field if present in request */
-    if (validatedData.calificacion !== undefined) {
-      updateFields.push('calificacion = ?');
-      updateValues.push(validatedData.calificacion);
+    if (validatedData.qualification !== undefined) {
+      updateFields.push('qualification = ?');
+      updateValues.push(validatedData.qualification);
     }
 
-    if (validatedData.comentario !== undefined) {
-      updateFields.push('comentario = ?');
-      updateValues.push(validatedData.comentario);
+    if (validatedData.comment !== undefined) {
+      updateFields.push('comment = ?');
+      updateValues.push(validatedData.comment);
     }
 
     /** Return 400 if no fields provided for update */
@@ -310,15 +301,13 @@ export async function updateReview(req: Request, res: Response) {
 
     /** Execute UPDATE query */
     await db.query(
-      `UPDATE calificaciones SET ${updateFields.join(
-        ', '
-      )} WHERE calificacion_id = ?`,
+      `UPDATE reviews SET ${updateFields.join(', ')} WHERE id = ?`,
       updateValues
     );
 
     /** Fetch updated review to return complete data */
     const [updatedReview] = await db.query<ReviewRow[]>(
-      `SELECT 
+      `SELECT
         ${REVIEW_SELECT_FIELDS}
       FROM reviews as r INNER JOIN users as u ON r.user_id = u.id
       WHERE r.id = ?`,
@@ -352,12 +341,12 @@ export async function deleteReview(req: Request, res: Response) {
     /** Validate review ID */
     const { id } = reviewIdSchema.parse(req.params);
     /** Get user info from JWT */
-    const usuario_id = req.auth!.id;
+    const userId = req.auth!.id;
     const isAdmin = req.auth!.role === 'ADMINISTRADOR';
 
     /** Check review existence and ownership */
     const [existingReview] = await db.query<ReviewOwnerRow[]>(
-      'SELECT usuario_id FROM calificaciones WHERE calificacion_id = ?',
+      'SELECT user_id FROM reviews WHERE id = ?',
       [id]
     );
 
@@ -368,16 +357,14 @@ export async function deleteReview(req: Request, res: Response) {
     }
 
     // Verificar permisos (propietario o admin)
-    if (!isAdmin && reviewOwner.usuario_id !== usuario_id) {
+    if (!isAdmin && reviewOwner.user_id !== userId) {
       return res.status(403).json({
         message: 'No tienes permisos para eliminar esta reseña',
       });
     }
 
     /** Delete review from database */
-    await db.query('DELETE FROM calificaciones WHERE calificacion_id = ?', [
-      id,
-    ]);
+    await db.query('DELETE FROM reviews WHERE id = ?', [id]);
 
     res.status(200).json({ message: 'Reseña eliminada exitosamente' });
   } catch (error: any) {
@@ -401,51 +388,75 @@ export async function deleteReview(req: Request, res: Response) {
 export async function getReviewsByProduct(req: Request, res: Response) {
   try {
     /** Validate product ID from route params */
-    const { producto_id } = productIdSchema.parse(req.params);
+    const { product_id } = productIdSchema.parse(req.params);
     /** Validate pagination/sorting query params */
-    const validatedQuery = reviewsQuerySchema.parse(req.query);
-    const { page, limit, sort, order } = validatedQuery;
+    const validatedQuery = reviewsQuerySchema.parse({
+      ...req.query,
+      product_id,
+    });
+    const {
+      page,
+      limit,
+      sort,
+      order,
+      user_id,
+      qualification_min,
+      qualification_max,
+    } = validatedQuery;
 
     /** Query for product-specific reviews */
+    const conditions: string[] = ['r.product_id = ?'];
+    const params: Array<string | number> = [product_id];
+
+    if (user_id) {
+      conditions.push('r.user_id = ?');
+      params.push(user_id);
+    }
+
+    if (qualification_min !== undefined) {
+      conditions.push('r.qualification >= ?');
+      params.push(qualification_min);
+    }
+
+    if (qualification_max !== undefined) {
+      conditions.push('r.qualification <= ?');
+      params.push(qualification_max);
+    }
+
     let baseQuery = `
       SELECT 
         ${REVIEW_SELECT_FIELDS}
       FROM reviews as r INNER JOIN users as u ON r.user_id = u.id
-      WHERE r.product_id = ? 
     `;
+    let countQuery = 'SELECT COUNT(*) as total FROM reviews as r';
+
+    const whereClause = ` WHERE ${conditions.join(' AND ')}`;
+    baseQuery += whereClause;
+    countQuery += whereClause;
 
     /** Apply sorting (date or rating) */
-    if (sort === 'fecha') {
-      baseQuery += ` ORDER BY c.fecha ${order}`;
-    } else if (sort === 'calificacion') {
-      baseQuery += ` ORDER BY c.calificacion ${order}`;
-    }
+    const sortColumn =
+      sort === 'qualification' ? 'r.qualification' : 'r.review_date';
+    baseQuery += ` ORDER BY ${sortColumn} ${order}`;
 
     /** Get total count for this product */
-    const [totalResult] = await db.query<CountRow[]>(
-      'SELECT COUNT(*) as total FROM calificaciones WHERE producto_id = ?',
-      [producto_id]
-    );
+    const [totalResult] = await db.query<CountRow[]>(countQuery, params);
     /** Safe destructuring with default value */
     const [{ total } = { total: 0 }] = totalResult;
 
     /** Calculate pagination metadata */
-    const pages = Math.ceil(total / limit);
-    const currentPage = Math.max(1, Math.min(page, pages));
+    const pages = total > 0 ? Math.ceil(total / limit) : 0;
+    const currentPage = pages > 0 ? Math.max(1, Math.min(page, pages)) : 1;
     const offset = (currentPage - 1) * limit;
-    const first = 1;
-    const prev = currentPage > 1 ? currentPage - 1 : null;
-    const next = currentPage < pages ? currentPage + 1 : null;
-
-    /** Add LIMIT and OFFSET */
-    baseQuery += ' LIMIT ? OFFSET ?';
+    const first = pages > 0 ? 1 : 0;
+    const prev = pages > 0 && currentPage > 1 ? currentPage - 1 : null;
+    const next = pages > 0 && currentPage < pages ? currentPage + 1 : null;
 
     /** Execute query with product ID and pagination params */
-    const [reviews] = await db.query<ReviewRow[]>(baseQuery, [
-      product_id,
-      limit,
-      offset,
-    ]);
+    const [reviews] = await db.query<ReviewRow[]>(
+      `${baseQuery} LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
 
     const response: ReviewsPaginatedResponse = {
       total,
