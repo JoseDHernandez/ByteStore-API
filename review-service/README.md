@@ -78,40 +78,51 @@ Para obtener una reseña específica por su ID.
 
 ---
 
-### Crear una nueva reseña (Requiere autenticación)
+Flujo sencillo para proteger las rutas de creación y modificación:
 
-Para crear una nueva reseña de producto.
+1. Inicia sesión en el user-service (`POST /users/sign-in`) para recibir tu JWT.
+2. Envía el header `Authorization: <token>` en las rutas protegidas.
+3. Comprueba si tu token sigue activo consultando `GET /reviews/auth/validate`.
 
-**POST** `/`
+#### Obtener token
 
-**Cuerpo de la solicitud**
+```http
+POST /users/sign-in
+Content-Type: application/json
 
 ```js
 {
-  "product_id": 2,
-  "user_name": "Maria Lopez", // Generado o pasado desde el cliente
-  "qualification": 4.3,
-  "comment": "Un buen producto, lo recomiendo."
+  "correo": "usuario@ejemplo.com",
+  "password": "tu_password"
 }
 ```
 
-**Respuesta**
+#### Validar token
+
+```http
+GET /reviews/auth/validate
+Authorization: <token>
+```
+
+**Respuesta 200**
 
 ```json
 {
-  "message": "Calificación creada",
-  "data": {
-    "id": 1,
-    "product_id": 2,
-    "qualification": "4.3",
-    "comment": "Un buen producto, lo recomiendo.",
-    "review_date": "2025-10-03T00:06:15.000Z",
-    "user_name": "Maria Lopez"
+  "message": "Token válido",
+  "user": {
+    "id": "01991c0e-16f0-707f-9f6f-3614666caead",
+    "role": "USUARIO"
   }
 }
 ```
 
----
+#### Permisos rápidos
+
+- Público: `GET /reviews`, `GET /reviews/:id`
+- Autenticado: `POST /reviews`
+- Propietario/Admin: `PUT /reviews/:id`, `DELETE /reviews/:id`
+
+### 📝 Endpoints de Reviews
 
 ### Actualizar una reseña (Requiere autenticación)
 
@@ -128,7 +139,12 @@ Para actualizar una reseña existente.
 }
 ```
 
-**Respuesta**
+#### Crear Review
+
+```http
+POST /api/reviews
+Content-Type: application/json
+Authorization: <token>
 
 ```json
 {
@@ -150,7 +166,10 @@ Para actualizar una reseña existente.
 
 Para eliminar una reseña existente.
 
-**DELETE** `/:id`
+```http
+PUT /api/reviews/:id
+Content-Type: application/json
+Authorization: <token>
 
 **Respuesta**
 
@@ -159,3 +178,77 @@ Para eliminar una reseña existente.
   "message": "Reseña eliminada exitosamente"
 }
 ```
+
+#### Eliminar Review
+
+```http
+DELETE /api/reviews/:id
+Authorization: <token>
+```
+
+## 🗄️ Estructura de la Base de Datos
+
+### Tabla: calificaciones
+
+```sql
+calificacion_id (PK, AUTO_INCREMENT) | user_id (FK) | producto_id | calificacion (1-5) | comentario (TEXT) | fecha_creacion (DATETIME)
+```
+
+## 🚨 Códigos de Estado HTTP
+
+- **200** - OK (operación exitosa)
+- **201** - Created (recurso creado)
+- **400** - Bad Request (datos inválidos)
+- **401** - Unauthorized (no autenticado)
+- **403** - Forbidden (sin permisos)
+- **404** - Not Found (recurso no encontrado)
+- **500** - Internal Server Error (error del servidor)
+
+## 📁 Estructura del Proyecto
+
+```
+review-service/
+├── src/
+│   ├── controllers/     # Controladores de las rutas
+│   ├── middleware/      # Middleware de autenticación
+│   ├── routes/         # Definición de rutas
+│   ├── schemas/        # Validaciones Zod
+│   ├── types/          # Tipos TypeScript
+│   ├── utils/          # Utilidades (JWT)
+│   ├── db.ts           # Configuración de base de datos
+│   └── index.ts        # Punto de entrada
+├── init/
+│   └── data.sql        # Script de inicialización
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+## 🐳 Docker
+
+Para ejecutar con Docker:
+
+```bash
+# Construir imagen
+docker build -t review-service .
+
+# Ejecutar contenedor
+docker run -p 3005:3005 --env-file .env review-service
+```
+
+## 📝 Notas Importantes
+
+- Las fechas se manejan en formato ISO 8601
+- La paginación sigue la estructura estándar especificada
+- Las calificaciones van de 1 a 5 estrellas
+- Las transacciones garantizan consistencia en operaciones complejas
+- El middleware de autenticación valida tanto la existencia del token como del usuario
+- Solo el propietario de una review o un admin puede modificarla o eliminarla
+
+## 🤝 Contribución
+
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Abre un Pull Request
