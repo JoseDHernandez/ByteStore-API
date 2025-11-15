@@ -40,7 +40,7 @@ export const getUserById = async (req: Request, res: Response) => {
     if (!dataBody.success)
       return res.status(400).json({
         message: "Invalid data",
-        errors: dataBody.error.format,
+        errors: dataBody.error._zod.def.map((e) => e.message),
       });
     //Validar cuenta
     const data = dataBody.data;
@@ -70,7 +70,7 @@ export const getUsersPaginated = async (req: Request, res: Response) => {
     if (!validation.success)
       return res.status(400).json({
         message: "Invalid data",
-        errors: validation.error.format,
+        errors: validation.error._zod.def.map((e) => e.message),
       });
 
     const { page: numberPage, limit: perPage, search } = validation.data;
@@ -135,19 +135,51 @@ export const updateUser = async (req: Request, res: Response) => {
     if (!dataBody.success)
       return res.status(400).json({
         message: "Invalid data",
-        errors: dataBody.error.format,
+        errors: dataBody.error._zod.def.map((e) => e.message),
       });
     //Validar cuenta
     const data = dataBody.data;
     if (data.id !== req.auth?.id && req.auth?.role !== "ADMINISTRADOR")
       return res.status(401).json({ message: "Invalid role" });
-    const [updateSQL] = await db.query<ResultSetHeader>(
-      "UPDATE users SET name=?, email=?,physical_address=? WHERE id=?",
-      [data.name, data.email, data.physical_address, data.id]
+    // Validar datos vacíos
+    if (!data.email && !data.name && !data.physical_address) {
+      return res.status(400).json({ message: "Datos vacíos" });
+    }
+
+    const fields: string[] = [];
+    const values: any[] = [];
+
+    // Agregar campos
+    if (data.email) {
+      fields.push("email = ?");
+      values.push(data.email);
+    }
+
+    if (data.name) {
+      fields.push("name = ?");
+      values.push(data.name);
+    }
+
+    if (data.physical_address) {
+      fields.push("physical_address = ?");
+      values.push(data.physical_address);
+    }
+
+    //consulta
+    const query = `UPDATE users SET ${fields.join(", ")} WHERE id = ?`;
+    values.push(data.id);
+
+    //actulizar
+    const [updateSQL] = await db.query<ResultSetHeader>(query, values);
+
+    //retornar datos
+    const [selectSQL] = await db.query<User[]>(
+      "SELECT name,email,physical_address FROM users WHERE id=?",
+      [data.id]
     );
-    if (updateSQL.affectedRows === 1) {
+    if (updateSQL.affectedRows === 1 && selectSQL[0]) {
       const dto: UserResponseDTO = {
-        ...data,
+        ...selectSQL[0],
         role: req.auth?.role === "ADMINISTRADOR" ? "ADMINISTRADOR" : "CLIENTE",
       };
       return res.status(200).json({ ...dto });
@@ -167,7 +199,7 @@ export const updatePassword = async (req: Request, res: Response) => {
     if (!validation.success)
       return res.status(400).json({
         message: "Invalid data",
-        errors: validation.error.format,
+        errors: validation.error._zod.def.map((e) => e.message),
       });
     const data = validation.data;
     //diferente usuario y no es administrador
@@ -198,7 +230,7 @@ export const changeRole = async (req: Request, res: Response) => {
     if (!validation.success)
       return res.status(400).json({
         message: "Invalid data",
-        errors: validation.error.format,
+        errors: validation.error._zod.def.map((e) => e.message),
       });
     const userId = validation.data.id;
     //Convertir rol
@@ -255,7 +287,7 @@ export const deleteUser = async (req: Request, res: Response) => {
       if (!v.success)
         return res.status(400).json({
           message: "Invalid data",
-          errors: v.error.format,
+          errors: v.error._zod.def.map((e) => e.message),
         });
       //Validar
       const [userQuery] = await db.query<UserPassword[]>(
@@ -271,7 +303,7 @@ export const deleteUser = async (req: Request, res: Response) => {
       if (!validation.success)
         return res.status(400).json({
           message: "Invalid data",
-          errors: validation.error.format,
+          errors: validation.error._zod.def.map((e) => e.message),
         });
       const data = validation.data;
       if (data.id !== req.auth?.id)

@@ -16,7 +16,10 @@ export const login = async (req: Request, res: Response) => {
     if (!dataBody.success)
       return res
         .status(400)
-        .json({ message: "Invalid data", errors: dataBody.error.format });
+        .json({
+          message: "Invalid data",
+          errors: dataBody.error._zod.def.map((e) => e.message),
+        });
     const data = dataBody.data;
     //Obtener usuario
     const [userData] = await db.query<User[]>(
@@ -70,7 +73,10 @@ export const register = async (req: Request, res: Response) => {
     if (!dataBody.success)
       return res
         .status(400)
-        .json({ message: "Invalid data", errors: dataBody.error.format });
+        .json({
+          message: "Invalid data",
+          errors: dataBody.error._zod.def.map((e) => e.message),
+        });
     const data = dataBody.data;
     //Consultar existencia
     const [SearchUser] = await db.query<CountUsers[]>(

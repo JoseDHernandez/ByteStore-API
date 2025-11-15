@@ -62,16 +62,15 @@ export const updateSchema = z.object({
     .trim()
     .min(6, "Debe tener al menos 6 caracteres")
     .max(200, "No puede exceder 200 caracteres")
-    .regex(
-      /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/,
-      "Solo letras y espacios para el nombre"
-    ),
+    .regex(/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/, "Solo letras y espacios para el nombre")
+    .optional(),
   email: z
     .email({ message: "El email es requerido" })
     .trim()
     .min(5, "El email debe tener al menos 5 caracteres")
     .max(300, "El email no puede exceder 300 caracteres")
-    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Email no válido"),
+    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Email no válido")
+    .optional(),
   physical_address: z
     .string({ message: "La dirección es requerida" })
     .trim()
@@ -80,7 +79,8 @@ export const updateSchema = z.object({
     .regex(
       /^[A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s\.\,'"#°\-]+$/,
       "Caracteres inválidos en la dirección"
-    ),
+    )
+    .optional(),
 });
 
 //Actualizar contraseña
@@ -140,6 +140,9 @@ export const searchUserSchema = z.object({
     .trim()
     .min(6, "Debe tener al menos 6 caracteres")
     .max(200, "No puede exceder 200 caracteres")
-    .regex(/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/, "Solo letras y espacios para el nombre")
+    .regex(
+      /^[0-9A-Za-zÁÉÍÓÚáéíóúÑñ\s\@\.]+$/,
+      "Solo letras y espacios para el nombre"
+    )
     .default(""),
 });
