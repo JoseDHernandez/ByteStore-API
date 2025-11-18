@@ -81,6 +81,16 @@ La mayoría de las operaciones de este servicio requieren autenticación mediant
 
 Este servicio utiliza JWT para autenticar las solicitudes. La mayoría de las rutas requieren un token JWT válido en el encabezado `Authorization` con el valor `<token>`. Solo los usuarios con el rol de `ADMINISTRADOR` pueden acceder a las rutas protegidas. Estos token son generados por el [servicio de usuarios](https://github.com/JoseDHernandez/ByteStore-API/tree/main/user-service).
 
+### API KEY
+
+Algunas rutas de administración pueden ser protegidas adicionalmente mediante una API KEY. Esta se envía en el encabezado `x-api-key` con el valor de la clave secreta definida en la variable de entorno `API_KEY_SECRET` del servicio de usuarios. Esta clave es compartida entre los servicios de la plataforma ByteStore para permitir la comunicación segura entre ellos.
+
+| Variable  | Descripción                   | Valor por defecto                                                  |
+| --------- | ----------------------------- | ------------------------------------------------------------------ |
+| `API_KEY` | Clave secreta para la API KEY | `wAwHx&xFzv2DXSq!U*QV$Yu@jrqNsxT$b3T^uCsBxqZVnnrG5UX5QbcmEpjRuS!m` |
+
+---
+
 ## Peticiones de la API
 
 ### Productos
@@ -1143,7 +1153,7 @@ Esta ruta permite crear un nuevo gráfico en el sistema.
 
 Esta ruta permite actualizar un gráfico existente en el sistema.
 
-**PATCH** `/displays/:id`
+**PUT** `/displays/:id`
 
 **Body:**
 
