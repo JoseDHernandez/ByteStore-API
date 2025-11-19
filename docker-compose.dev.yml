@@ -35,6 +35,7 @@ services:
       DATABASE_PASSWORD: APBjg7!RKa!P%t^NWd1y
       DATABASE_NAME: products
       JWT_SECRET: "@y*&0a%K%7P0t@uQ^38HN$$y4Z^PK#0zE7dem700Bbf&pC6HF$$aU^ARkE@u$$nn"
+      API_KEY: "wAwHx&xFzv2DXSq!U*QV$Yu@jrqNsxT$b3T^uCsBxqZVnnrG5UX5QbcmEpjRuS!m"
     volumes:
       - ./product-service/src:/usr/src/app/src
       - /usr/src/app/node_modules

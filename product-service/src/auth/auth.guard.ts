@@ -20,8 +20,19 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
     );
     if (isPublic) return true;
-    //obtener jwt
     const request = context.switchToHttp().getRequest<Request>();
+    //validar api key
+    const apiKey = request.headers['x-api-key'];
+
+    if (
+      apiKey &&
+      apiKey ===
+        (process.env.API_KEY ||
+          'wAwHx&xFzv2DXSq!U*QV$Yu@jrqNsxT$b3T^uCsBxqZVnnrG5UX5QbcmEpjRuS!m')
+    ) {
+      return true;
+    }
+    //obtener jwt
     const token = request.headers['authorization'];
     //validar existencia
     if (!token || Array.isArray(token))
