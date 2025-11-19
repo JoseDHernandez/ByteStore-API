@@ -1,25 +1,27 @@
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { db } from '../db.js';
 import type { RowDataPacket } from 'mysql2';
 import { z } from 'zod';
+import { getCatalogProductsByIds } from '../services/productCatalog.js';
+import { errors } from '../utils/httpError.js';
+
+const FALLBACK_PRODUCT_IMAGE = 'https://example.com/images/placeholder.jpg';
 
 // Esquemas de validación para productos de órdenes
 // Helpers de autorización y estado para reducir duplicación y mejorar claridad
 // - hasOrderAccess: acceso si es ADMINISTRADOR o dueño de la orden
-// - isOrderPending: exige estado 'pendiente' para permitir mutaciones
+// - isOrderPending: exige estado 'en_proceso' para permitir mutaciones
 function hasOrderAccess(
   order: RowDataPacket,
-  userId: number,
+  userId: string,
   isAdmin: boolean
 ): boolean {
-  // Normalizar user_id de la orden a número para comparar correctamente
-  const ownerId =
-    typeof order.user_id === 'string' ? Number(order.user_id) : order.user_id;
+  const ownerId = String(order.user_id);
   return isAdmin || ownerId === userId;
 }
 
 function isOrderPending(order: RowDataPacket): boolean {
-  return order.estado === 'pendiente';
+  return order.estado === 'en_proceso';
 }
 // Valida el parámetro `id` de la orden. Usa `coerce` para convertir strings numéricos.
 const idParamSchema = z.object({
@@ -62,13 +64,14 @@ const productIdSchema = z.object({
  */
 export async function addProductToOrder(
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<Response | void> {
   try {
     const { id } = idParamSchema.parse(req.params);
     const validatedData = addProductSchema.parse(req.body);
-    // Normalizamos `usuario_id` a number para comparación con `orderRow.user_id`.
-    const usuario_id = Number(req.auth!.id);
+    // Normalizamos el identificador autenticado como cadena para comparaciones
+    const authenticatedUserId = String(req.auth!.id);
     const isAdmin = req.auth!.role === 'ADMINISTRADOR';
 
     // Verificar que la orden existe y pertenece al usuario
@@ -78,22 +81,22 @@ export async function addProductToOrder(
     );
 
     if (order.length === 0) {
-      return res.status(404).json({ message: 'Orden no encontrada' });
+      return next(errors.notFound('Orden no encontrada'));
     }
     // Tras verificar que hay filas, `orderRow` no es nulo.
     const orderRow = order[0]!;
 
-    if (!hasOrderAccess(orderRow, usuario_id, isAdmin)) {
-      return res.status(403).json({
-        message: 'No tienes permisos para modificar esta orden',
-      });
+    if (!hasOrderAccess(orderRow, authenticatedUserId, isAdmin)) {
+      return next(
+        errors.forbidden('No tienes permisos para modificar esta orden')
+      );
     }
 
-    // Solo se pueden agregar productos a órdenes pendientes
+    // Solo se pueden agregar productos a órdenes en proceso
     if (!isOrderPending(orderRow)) {
-      return res.status(400).json({
-        message: 'Solo se pueden agregar productos a órdenes pendientes',
-      });
+      return next(
+        errors.conflict('Solo se pueden agregar productos a órdenes en proceso')
+      );
     }
 
     // Verificar si el producto ya existe en la orden
@@ -110,25 +113,30 @@ export async function addProductToOrder(
         [newQuantity, existingProduct[0].orden_productos_id]
       );
     } else {
-      // Si no existe, crear nuevo producto.
-      // Exigimos explícitamente nombre y precio para evitar defaults aleatorios.
-      if (
-        validatedData.precio === undefined ||
-        validatedData.nombre === undefined
-      ) {
-        return res.status(400).json({
-          message:
-            'Para agregar un nuevo producto, se requiere "nombre" y "precio"',
-        });
+      // Si no existe, buscamos detalles en el catálogo local para evitar datos inconsistentes
+      const catalog = await getCatalogProductsByIds([
+        validatedData.producto_id,
+      ]);
+      const catalogEntry = catalog.get(validatedData.producto_id);
+
+      const precio = validatedData.precio ?? catalogEntry?.precio ?? undefined;
+      const nombre = validatedData.nombre ?? catalogEntry?.nombre ?? undefined;
+
+      if (precio === undefined || nombre === undefined) {
+        return next(
+          errors.validation(
+            'El producto no existe en la orden y no se encontraron datos suficientes en el catálogo'
+          )
+        );
       }
 
-      const precio = validatedData.precio;
-      const descuento = validatedData.descuento ?? 0;
-      const nombre = validatedData.nombre;
-      const marca = validatedData.marca ?? 'Marca Genérica';
-      const modelo = validatedData.modelo ?? 'Modelo Genérico';
+      const descuento = validatedData.descuento ?? catalogEntry?.descuento ?? 0;
+      const marca =
+        validatedData.marca ?? catalogEntry?.marca ?? 'Marca Genérica';
+      const modelo =
+        validatedData.modelo ?? catalogEntry?.modelo ?? 'Modelo Genérico';
       const imagen =
-        validatedData.imagen ?? 'https://example.com/images/placeholder.jpg';
+        validatedData.imagen ?? catalogEntry?.imagen ?? FALLBACK_PRODUCT_IMAGE;
 
       await db.query(
         `INSERT INTO order_products (orden_id, producto_id, nombre, precio, descuento, marca, modelo, cantidad, imagen)
@@ -153,13 +161,14 @@ export async function addProductToOrder(
       .json({ message: 'Producto agregado exitosamente a la orden' });
   } catch (error: any) {
     if (error.name === 'ZodError') {
-      return res.status(400).json({
+      return next({
+        status: 400,
+        code: 'ORD_400_VALIDATION',
         message: 'Datos inválidos',
-        errors: error.errors,
+        details: error.errors,
       });
     }
-    console.error('Error al agregar producto a la orden:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    return next(error);
   }
 }
 
@@ -170,13 +179,13 @@ export async function addProductToOrder(
  */
 export async function updateProductInOrder(
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<Response | void> {
   try {
     const { id, productId } = productIdSchema.parse(req.params);
     const validatedData = updateProductSchema.parse(req.body);
-    // `usuario_id` se normaliza a number por consistencia tipada.
-    const usuario_id = Number(req.auth!.id);
+    const authenticatedUserId = String(req.auth!.id);
     const isAdmin = req.auth!.role === 'ADMINISTRADOR';
 
     // Verificar que la orden existe y pertenece al usuario
@@ -186,20 +195,22 @@ export async function updateProductInOrder(
     );
 
     if (order.length === 0) {
-      return res.status(404).json({ message: 'Orden no encontrada' });
+      return next(errors.notFound('Orden no encontrada'));
     }
     const orderRow = order[0]!; // no nulo
-    if (!hasOrderAccess(orderRow, usuario_id, isAdmin)) {
-      return res.status(403).json({
-        message: 'No tienes permisos para modificar esta orden',
-      });
+    if (!hasOrderAccess(orderRow, authenticatedUserId, isAdmin)) {
+      return next(
+        errors.forbidden('No tienes permisos para modificar esta orden')
+      );
     }
 
-    // Solo se pueden modificar productos en órdenes pendientes
+    // Solo se pueden modificar productos en órdenes en proceso
     if (!isOrderPending(orderRow)) {
-      return res.status(400).json({
-        message: 'Solo se pueden modificar productos en órdenes pendientes',
-      });
+      return next(
+        errors.conflict(
+          'Solo se pueden modificar productos en órdenes en proceso'
+        )
+      );
     }
 
     // Verificar que el producto existe en la orden
@@ -209,9 +220,7 @@ export async function updateProductInOrder(
     );
 
     if (product.length === 0) {
-      return res
-        .status(404)
-        .json({ message: 'Producto no encontrado en la orden' });
+      return next(errors.notFound('Producto no encontrado en la orden'));
     }
 
     // Construir consulta de actualización
@@ -234,13 +243,11 @@ export async function updateProductInOrder(
     }
 
     if (updateFields.length === 0) {
-      return res.status(400).json({ message: 'No hay campos para actualizar' });
+      return next(errors.validation('No hay campos para actualizar'));
     }
 
     if (!product[0]) {
-      return res
-        .status(404)
-        .json({ message: 'Producto no encontrado en la orden' });
+      return next(errors.notFound('Producto no encontrado en la orden'));
     }
 
     updateValues.push(product[0].orden_productos_id);
@@ -257,13 +264,14 @@ export async function updateProductInOrder(
     res.status(200).json({ message: 'Producto actualizado exitosamente' });
   } catch (error: any) {
     if (error.name === 'ZodError') {
-      return res.status(400).json({
+      return next({
+        status: 400,
+        code: 'ORD_400_VALIDATION',
         message: 'Datos inválidos',
-        errors: error.errors,
+        details: error.errors,
       });
     }
-    console.error('Error al actualizar producto en la orden:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    return next(error);
   }
 }
 
@@ -274,11 +282,12 @@ export async function updateProductInOrder(
  */
 export async function removeProductFromOrder(
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<Response | void> {
   try {
     const { id, productId } = productIdSchema.parse(req.params);
-    const usuario_id = Number(req.auth!.id); // normalizado a number
+    const authenticatedUserId = String(req.auth!.id);
     const isAdmin = req.auth!.role === 'ADMINISTRADOR';
 
     // Verificar que la orden existe y pertenece al usuario
@@ -288,20 +297,22 @@ export async function removeProductFromOrder(
     );
 
     if (order.length === 0) {
-      return res.status(404).json({ message: 'Orden no encontrada' });
+      return next(errors.notFound('Orden no encontrada'));
     }
     const orderRow = order[0]!;
-    if (!hasOrderAccess(orderRow, usuario_id, isAdmin)) {
-      return res.status(403).json({
-        message: 'No tienes permisos para modificar esta orden',
-      });
+    if (!hasOrderAccess(orderRow, authenticatedUserId, isAdmin)) {
+      return next(
+        errors.forbidden('No tienes permisos para modificar esta orden')
+      );
     }
 
-    // Solo se pueden eliminar productos de órdenes pendientes
+    // Solo se pueden eliminar productos de órdenes en proceso
     if (!isOrderPending(orderRow)) {
-      return res.status(400).json({
-        message: 'Solo se pueden eliminar productos de órdenes pendientes',
-      });
+      return next(
+        errors.conflict(
+          'Solo se pueden eliminar productos de órdenes en proceso'
+        )
+      );
     }
 
     // Verificar que el producto existe en la orden
@@ -311,9 +322,7 @@ export async function removeProductFromOrder(
     );
 
     if (product.length === 0) {
-      return res
-        .status(404)
-        .json({ message: 'Producto no encontrado en la orden' });
+      return next(errors.notFound('Producto no encontrado en la orden'));
     }
 
     // Verificar que no sea el único producto (una orden debe tener al menos un producto)
@@ -323,10 +332,11 @@ export async function removeProductFromOrder(
     );
 
     if (!productCount[0] || productCount[0].total <= 1) {
-      return res.status(400).json({
-        message:
-          'No se puede eliminar el único producto de la orden. Elimina la orden completa si es necesario.',
-      });
+      return next(
+        errors.conflict(
+          'No se puede eliminar el único producto de la orden. Elimina la orden completa si es necesario.'
+        )
+      );
     }
 
     // Eliminar el producto
@@ -341,13 +351,14 @@ export async function removeProductFromOrder(
       .json({ message: 'Producto eliminado exitosamente de la orden' });
   } catch (error: any) {
     if (error.name === 'ZodError') {
-      return res.status(400).json({
+      return next({
+        status: 400,
+        code: 'ORD_400_VALIDATION',
         message: 'IDs inválidos',
-        errors: error.errors,
+        details: error.errors,
       });
     }
-    console.error('Error al eliminar producto de la orden:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    return next(error);
   }
 }
 
@@ -358,11 +369,12 @@ export async function removeProductFromOrder(
  */
 export async function getOrderProducts(
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<Response | void> {
   try {
     const { id } = idParamSchema.parse(req.params);
-    const usuario_id = Number(req.auth!.id); // normalizado a number
+    const authenticatedUserId = String(req.auth!.id);
     const isAdmin = req.auth!.role === 'ADMINISTRADOR';
 
     // Verificar que la orden existe y pertenece al usuario
@@ -372,14 +384,12 @@ export async function getOrderProducts(
     );
 
     if (order.length === 0) {
-      return res.status(404).json({ message: 'Orden no encontrada' });
+      return next(errors.notFound('Orden no encontrada'));
     }
     const orderRow = order[0]!;
 
-    if (!hasOrderAccess(orderRow, usuario_id, isAdmin)) {
-      return res.status(403).json({
-        message: 'No tienes permisos para ver esta orden',
-      });
+    if (!hasOrderAccess(orderRow, authenticatedUserId, isAdmin)) {
+      return next(errors.forbidden('No tienes permisos para ver esta orden'));
     }
 
     // Obtener productos de la orden
@@ -417,12 +427,13 @@ export async function getOrderProducts(
     });
   } catch (error: any) {
     if (error.name === 'ZodError') {
-      return res.status(400).json({
+      return next({
+        status: 400,
+        code: 'ORD_400_VALIDATION',
         message: 'ID inválido',
-        errors: error.errors,
+        details: error.errors,
       });
     }
-    console.error('Error al obtener productos de la orden:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    return next(error);
   }
 }

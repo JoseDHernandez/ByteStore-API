@@ -4,6 +4,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/jwt.js';
 /** JWT payload structure */
 import type { JWTData } from '../types/token.js';
+import { errors } from '../utils/httpError.js';
 
 /**
  * Helper to send consistent 401 Unauthorized responses
@@ -53,7 +54,7 @@ export async function isAdmin(
   }
 
   if (req.auth.role !== 'ADMINISTRADOR') {
-    return res.status(403).json({ message: 'Acceso denegado' });
+    return next(errors.forbidden('Acceso denegado'));
   }
 
   return next();
@@ -88,7 +89,7 @@ export function canAccessResource(
   const isAdminUser = req.auth.role === 'ADMINISTRADOR';
 
   if (!isOwner && !isAdminUser) {
-    return res.status(403).json({ message: 'Acceso denegado' });
+    return next(errors.forbidden('Acceso denegado'));
   }
 
   return next();
