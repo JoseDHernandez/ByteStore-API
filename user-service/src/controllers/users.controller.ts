@@ -104,10 +104,10 @@ export const getUsersPaginated = async (req: Request, res: Response) => {
     const prev = page > 1 ? page - 1 : null;
     const next = page < pages ? page + 1 : null;
 
-    const totalPages = Math.ceil(total / perPage);
+    const totalItems = data.length;
 
     return res.status(200).json({
-      total: totalPages,
+      total: totalItems,
       pages,
       first,
       next,
