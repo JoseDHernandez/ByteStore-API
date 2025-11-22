@@ -1,28 +1,44 @@
-import { Router } from "express";
+/** Express router for HTTP endpoint routing */
+import { Router } from 'express';
+/** Review business logic controllers */
 import {
   createReview,
   getReviews,
   getReviewById,
   updateReview,
   deleteReview,
-} from "../controllers/reviews.controller.ts";
-import { authMiddleware } from "../middleware/auth.ts";
+} from '../controllers/reviews.controller.ts';
+/** Authentication and authorization middleware */
+import { authMiddleware, canAccessResource } from '../middleware/auth.ts';
 
+/** Router instance for review-related endpoints */
 const router = Router();
 
-// GET / - Obtener reviews paginadas (acceso público)
+/**
+ * GET /auth/validate
+ * Token validation endpoint - returns decoded user info if valid
+ * Requires authentication
+ */
+router.get('/auth/validate', authMiddleware, (req, res) => {
+  return res.status(200).json({
+    message: 'Token válido',
+    user: req.auth,
+  });
+});
+
+/** GET / - Retrieve paginated reviews with optional filters (public access) */
 router.get('/', getReviews);
 
-// POST / - Crear nueva review (requiere autenticación)
+/** POST / - Create a new product review (authenticated users only) */
 router.post('/', authMiddleware, createReview);
 
-// GET /:id - Obtener review por ID (acceso público)
+/** GET /:id - Get single review by ID (public access) */
 router.get('/:id', getReviewById);
 
-// PUT /:id - Actualizar review (solo propietario o admin)
-router.put('/:id', authMiddleware, updateReview);
+/** PUT /:id - Update review (owner or admin only) */
+router.put('/:id', authMiddleware, canAccessResource, updateReview);
 
-// DELETE /:id - Eliminar review (solo propietario o admin)
-router.delete('/:id', authMiddleware, deleteReview);
+/** DELETE /:id - Delete review (owner or admin only) */
+router.delete('/:id', authMiddleware, canAccessResource, deleteReview);
 
 export default router;
