@@ -226,7 +226,7 @@ export const changeRole = async (req: Request, res: Response) => {
     //Obtener datos y validar
     const { id } = req.params;
     const { role } = req.body ?? "";
-    const validation = changeRoleSchema.safeParse({ id, role });
+    const validation = changeRoleSchema.safeParse({ id, role: role.toLowerCase() });
     if (!validation.success)
       return res.status(400).json({
         message: "Invalid data",
