@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS order_status_history (
     estado_anterior ENUM('en_proceso', 'cancelado', 'retrasado', 'entregado') NOT NULL COMMENT 'Estado anterior de la orden',
     estado_nuevo ENUM('en_proceso', 'cancelado', 'retrasado', 'entregado') NOT NULL COMMENT 'Nuevo estado de la orden',
     motivo TEXT COMMENT 'Motivo del cambio de estado',
-    changed_by INT NOT NULL COMMENT 'ID del usuario que realizó el cambio',
+    changed_by VARCHAR(255) NOT NULL COMMENT 'ID del usuario que realizó el cambio',
     changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha y hora del cambio',
     
     -- Claves foráneas

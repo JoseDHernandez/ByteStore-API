@@ -1,6 +1,5 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
-  "extends": "./node_modules/@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
     // File Layout
     // "rootDir": "./src",
@@ -8,12 +7,13 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
+    "target": "es2022",
     "module": "nodenext",
-    "target": "esnext",
+    "moduleResolution": "nodenext",
     "esModuleInterop": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": [],
+    "types": ["node"],
     "typeRoots": ["./src/types", "./node_modules/@types"],
     // For nodejs:
     // "lib": ["esnext"],
@@ -39,5 +39,6 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true
-  }
+  },
+  "include": ["./src"]
 }
